@@ -1,0 +1,449 @@
+{
+    "type": "object",
+    "required": ["profileId", "docNumber", "generalRecord", "cellPhNum", "dbaName", "companyName", "contactName", "email", "birthDate", "addressData"],
+    "properties": {
+        "profileId": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "The account profile Id Schema",
+            "examples": ["L4XXXXX"]
+        },
+        "docNumber": {
+            "type": "string",
+            "maxLength": 14,
+            "title": "The docNumber(CPF ou CNPJ) Schema",
+            "examples": ["473954170034",
+                "78354027000170"]
+        },
+        "generalRecord": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "The generalRecord(RG) Schema",
+            "examples": ["421790854"]
+        },
+        "cellPhNum": {
+            "type": "string",
+            "maxLength": 11,
+            "title": "The cellPhNum(celular) Schema",
+            "examples": ["11930415522"]
+        },
+        "dbaName": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "The dbaName(nome fantasia) Schema",
+            "examples": ["Nome fantasia"]
+        },
+        "companyName": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "The companyName(razão social) Schema",
+            "examples": ["Razão Social"]
+        },
+        "contactName": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "The contactName(nome contato) Schema",
+            "examples": ["Nome Contato"]
+        },
+        "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "The email Schema",
+            "examples": ["company_email@company.com"]
+        },
+        "birthDate": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "The birthDate(data de nascimento(Y-m-d)) Schema",
+            "examples": ["1978-11-20"]
+        },
+        "addressData": {
+            "type": "object",
+            "title": "The addressData Schema",
+            "required": ["address", "addressNumber", "city", "neighborhood", "postalCode", "state", "country"],
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "title": "The address Schema",
+                    "examples": ["R Rui Barbosa"]
+                },
+                "addressComplement": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "title": "The addressComplement(complemento) Schema",
+                    "examples": ["Apto 82"]
+                },
+                "addressNumber": {
+                    "type": "string",
+                    "maxLength": 30,
+                    "title": "The addressNumber(número do endereço) Schema",
+                    "examples": ["34"]
+                },
+                "city": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "title": "The city Schema",
+                    "examples": ["Foz do Iguaçu"]
+                },
+                "neighborhood": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "title": "The neighborhood(bairro) Schema",
+                    "examples": ["Maracanã"]
+                },
+                "postalCode": {
+                    "type": "string",
+                    "maxLength": 8,
+                    "title": "The postalCode(CEP) Schema",
+                    "examples": ["85852120"]
+                },
+                "state": {
+                    "type": "string",
+                    "maxLength": 2,
+                    "minLenght": 2,
+                    "title": "The state(estado) Schema",
+                    "examples": ["PR"]
+                },
+                "country": {
+                    "type": "string",
+                    "maxLength": 3,
+                    "minLenght": 3,
+                    "title": "The country(país) Schema",
+                    "examples": ["BRA"]
+                }
+            },
+            "examples": [{
+                    "address": "R Rui Barbosa",
+                    "addressComplement": "",
+                    "addressNumber": "34",
+                    "city": "Foz do Iguaçu",
+                    "neighborhood": "Maracanã",
+                    "postalCode": "85852120",
+                    "state": "PR",
+                    "country": "BRA"
+                }
+            ]
+        },
+        "termsData": {
+            "type": "array",
+            "title": "The termsData Schema",
+            "items": {
+                "type": "object",
+                "default": {},
+                "title": "A Schema",
+                "required": [
+                    "startDate",
+                    "endDate",
+                    "days",
+                    "type",
+                    "interest",
+                    "automaticAnticipation",
+                    "maxAnticipationPercent",
+                    "paymentDay",
+                    "oneTimePayment",
+                    "fixedAmount",
+                    "anticipationDays",
+                    "terms"
+                ],
+                "properties": {
+                    "startDate": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The startDate Schema - (Y-m-d) ",
+                        "examples": [
+                            "2021-11-09"
+                        ]
+                    },
+                    "endDate": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The endDate Schema - (Y-m-d) ",
+                        "examples": [
+                            "2021-12-09"
+                        ]
+                    },
+                    "days": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The days Schema",
+                        "examples": [
+                            "1"
+                        ]
+                    },
+                    "type": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The type Schema",
+                        "examples": [
+                            "promotional", "standard",
+                        ]
+                    },
+                    "interest": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The interest Schema",
+                        "examples": [
+                            "1.49"
+                        ]
+                    },
+                    "automaticAnticipation": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The automaticAnticipation Schema",
+                        "examples": [
+                            "Y", "N"
+                        ]
+                    },
+                    "maxAnticipationPercent": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The maxAnticipationPercent Schema",
+                        "examples": [
+                            "1.11", "0"
+                        ]
+                    },
+                    "paymentDay": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The paymentDay Schema",
+                        "examples": [
+                            "3"
+                        ]
+                    },
+                    "oneTimePayment": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The oneTimePayment Schema",
+                        "examples": [
+                            "Y", "N"
+                        ]
+                    },
+                    "fixedAmount": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The fixedAmount Schema",
+                        "examples": [
+                            "2.50", "0"
+                        ]
+                    },
+                    "anticipationDays": {
+                        "type": "string",
+                        "default": "",
+                        "title": "The anticipationDays Schema",
+                        "examples": [
+                            "4"
+                        ]
+                    },
+                    "terms": {
+                        "type": "array",
+                        "default": [],
+                        "title": "The terms Schema",
+                        "items": {
+                            "type": "object",
+                            "title": "A Schema",
+                            "required": [
+                                "initialInstallment",
+                                "finalInstallment",
+                                "rate",
+                                "cardType",
+                                "fixedAmount",
+                                "days"
+                            ],
+                            "properties": {
+                                "initialInstallment": {
+                                    "type": "string",
+                                    "title": "The initialInstallment Schema",
+                                    "examples": [
+                                        "1",
+                                        "5",
+                                        "9"
+                                    ]
+                                },
+                                "finalInstallment": {
+                                    "type": "string",
+                                    "title": "The finalInstallment Schema",
+                                    "examples": [
+                                        "4",
+                                        "8",
+                                        "12"
+                                    ]
+                                },
+                                "rate": {
+                                    "type": "string",
+                                    "title": "The rate Schema",
+                                    "examples": [
+                                        "2.20",
+                                        "3.60",
+                                        "4.50"
+                                    ]
+                                },
+                                "cardType": {
+                                    "type": "string",
+                                    "title": "The cardType Schema",
+                                    "examples": [
+                                        "amex",
+                                        "aura",
+                                        "dinersclub",
+                                        "discover",
+                                        "elo",
+                                        "hipercard",
+                                        "jcb",
+                                        "maestro",
+                                        "mastercard",
+                                        "visa",
+                                        "all"
+                                    ]
+                                },
+                                "fixedAmount": {
+                                    "type": "string",
+                                    "title": "The fixedAmount Schema",
+                                    "examples": [
+                                        "0.00",
+                                        "2.00",
+                                        "0"
+                                    ]
+                                },
+                                "days": {
+                                    "type": "string",
+                                    "title": "The days Schema",
+                                    "examples": [
+                                        "31",
+                                        "22",
+                                        "11"
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                    "initialInstallment": "1",
+                                    "finalInstallment": "4",
+                                    "rate": "2.20",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "0.00",
+                                    "days": "31"
+                                }, {
+                                    "initialInstallment": "5",
+                                    "finalInstallment": "8",
+                                    "rate": "3.60",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "2.00",
+                                    "days": "22"
+                                }, {
+                                    "initialInstallment": "9",
+                                    "finalInstallment": "12",
+                                    "rate": "4.50",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "0",
+                                    "days": "11"
+                                }
+                            ]
+                        },
+                        "examples": [
+                            [{
+                                    "initialInstallment": "1",
+                                    "finalInstallment": "4",
+                                    "rate": "2.20",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "0.00",
+                                    "days": "31"
+                                }, {
+                                    "initialInstallment": "5",
+                                    "finalInstallment": "8",
+                                    "rate": "3.60",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "2.00",
+                                    "days": "22"
+                                }, {
+                                    "initialInstallment": "9",
+                                    "finalInstallment": "12",
+                                    "rate": "4.50",
+                                    "cardType": "mastercard",
+                                    "fixedAmount": "0",
+                                    "days": "11"
+                                }
+                            ]
+                        ]
+                    }
+                },
+                "examples": [{
+                        "startDate": "2021-11-09",
+                        "endDate": "2021-12-09",
+                        "days": "1",
+                        "type": "promotional",
+                        "interest": "1.49",
+                        "automaticAnticipation": "Y",
+                        "maxAnticipationPercent": "1.11",
+                        "paymentDay": "3",
+                        "oneTimePayment": "Y",
+                        "unitPrice": null,
+                        "fixedAmount": "2.50",
+                        "anticipationDays": "4",
+                        "terms": [{
+                                "initialInstallment": "1",
+                                "finalInstallment": "4",
+                                "rate": "2.20",
+                                "cardType": "mastercard",
+                                "fixedAmount": "0.00",
+                                "days": "31"
+                            }, {
+                                "initialInstallment": "5",
+                                "finalInstallment": "8",
+                                "rate": "3.60",
+                                "cardType": "mastercard",
+                                "fixedAmount": "2.00",
+                                "days": "22"
+                            }, {
+                                "initialInstallment": "9",
+                                "finalInstallment": "12",
+                                "rate": "4.50",
+                                "cardType": "mastercard",
+                                "fixedAmount": "0",
+                                "days": "11"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "examples": [
+                [{
+                        "startDate": "2021-11-09",
+                        "endDate": "2023-10-31",
+                        "days": "1",
+                        "type": "promotional",
+                        "interest": "1.49",
+                        "automaticAnticipation": "Y",
+                        "maxAnticipationPercent": "1.11",
+                        "paymentDay": "3",
+                        "oneTimePayment": "Y",
+                        "unitPrice": null,
+                        "fixedAmount": "2.50",
+                        "anticipationDays": "4",
+                        "terms": [{
+                                "initialInstallment": "1",
+                                "finalInstallment": "4",
+                                "rate": "2.20",
+                                "cardType": "mastercard",
+                                "fixedAmount": "0.00",
+                                "days": "31"
+                            }, {
+                                "initialInstallment": "5",
+                                "finalInstallment": "8",
+                                "rate": "3.60",
+                                "cardType": "mastercard",
+                                "fixedAmount": "2.00",
+                                "days": "22"
+                            }, {
+                                "initialInstallment": "9",
+                                "finalInstallment": "12",
+                                "rate": "4.50",
+                                "cardType": "mastercard",
+                                "fixedAmount": "0",
+                                "days": "11"
+                            }
+                        ]
+                    }
+                ]
+            ]
+        }
+    }
+}

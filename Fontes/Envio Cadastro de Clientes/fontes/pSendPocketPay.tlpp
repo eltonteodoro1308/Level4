@@ -1,0 +1,313 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+//TODO Criar campo standard e enviar no json.
+user function pSendPocketPay( aParam )
+
+	local nX         := 0
+	local nTam       := len( aParam )
+	local cEmp       := aParam[ nTam - 3 ]
+	local cFil       := aParam[ nTam - 2 ]
+	local cJsonEnv   := ''
+
+	private aJsonList := {}
+	private aRecno    := {}
+	private cAlias    := getNextAlias()
+	private nRecSa1   := 0
+	private nRecCna   := 0
+	private nRecCnb   := 0
+
+	if rpcSetEnv( cEmp, cFil )
+
+		private cUrl       := AllTrim( GetMv( 'PK_URL' ) )
+		private cMethod    := 'POST'
+		private aHeadStr   := { "Content-Type: application/json",;
+			"Authorization: " + AllTrim( GetMv( 'PK_MERCH' ) ),;
+			'accept: */*',;
+			'user-agent: totvs-protheus' }
+		private cProfileId := GetMv( 'PK_PROFID' )
+		private bProcResposta := {||}
+
+		if LockByName( ProcName(), .T., .T.)
+
+			If Select( cAlias ) <> 0
+
+				( cAlias )->( DbCloseArea() )
+
+			EndIf
+
+			queryExec()
+
+			( cAlias )->( DbGoTop() )
+
+			While ( cAlias )->(!EOF())
+
+				makeJsonList()
+
+				( cAlias )->(DbSkip())
+
+			EndDo
+
+			( cAlias )->( DbCloseArea() )
+
+
+			for nX := 1 to len( aJsonList )
+
+				cJsonEnv := FWhttpEncode( aJsonList[nX]:toJson() )
+
+				fetch( cUrl , cMethod, /* cGETParms */, /* cPOSTParms */ cJsonEnv, /* nTimeOut */, aHeadStr,;
+					{ | a, b, c, d, e | processRes( a, b, c, d, e, aRecno[nX], cJsonEnv )  }  )
+
+			next nX
+
+			UnlockByName( ProcName(), .T., .T., .F.)
+
+		end if
+
+	end if
+
+return
+
+static function processRes( cHeaderRet, uResponse, uJsonXml,cHttpCode, cContentType, aRecno, cJsonEnv )
+
+	DbSelectArea( 'SA1' )
+	SA1->( DbGoto( aRecno[ 1 ] ) )
+
+	if SA1->( Recno() ) == aRecno[ 1 ]
+
+		RecLock( 'SA1', .F. )
+
+		SA1->A1_XENVIAD := '1'
+
+		SA1->( MsUnlock() )
+
+	end if
+
+	DbSelectArea( 'CN9' )
+	CN9->( DbGoto( aRecno[ 2 ] ) )
+
+	if CN9->( Recno() ) == aRecno[ 2 ]
+
+		RecLock( 'CN9', .F. )
+
+		CN9->CN9_XENVID := '1'
+		CN9->CN9_XHTTPC := cHttpCode
+		CN9->CN9_XHEADE := cHeaderRet
+		CN9->CN9_XBODY  := uResponse
+		CN9->CN9_XBODYE := DecodeUtf8( cJsonEnv )
+
+		CN9->( MsUnlock() )
+
+	end if
+
+return
+
+static function fetch( cUrl, cMethod, cGETParms, cPOSTParms, nTimeOut, aHeadStr, bProcess )
+
+	Local cHeaderRet   := ''
+	Local aHeaderRet   := {}
+	Local cProperty    := ''
+	Local cValue       := ''
+	Local nPos         := 0
+	Local cHttpCode    := ''
+	Local cContentType := ''
+	Local uResponse    := nil
+	Local uJsonXml     := nil
+	Local aAux         := {}
+	Local nX           := 0
+
+	uResponse  := HttpQuote ( cUrl, cMethod, cGETParms, cPOSTParms, nTimeOut, aHeadStr, @cHeaderRet )
+
+	aAux := StrTokArr2( StrTran( cHeaderRet, Chr(13), '' ), Chr(10), .T. )
+
+	cHttpCode := StrTokArr2( aAux[ 1 ], " ", .T. )[2]
+
+	for nX := 2 to len( aAux )
+
+		nPos := At( ":", aAux[ nX ] )
+
+		cProperty := SubString( aAux[ nX ], 1, nPos - 1 )
+		cValue    := SubString( aAux[ nX ], nPos + 2, Len( aAux[ nX ] )  )
+
+		aAdd( aHeaderRet, { cProperty, cValue } )
+
+		if cProperty == 'Content-Type'
+
+			cContentType := cValue
+
+		end if
+
+	next nX
+
+	if 'application/xml' $ Lower(cContentType) .Or.;
+			'application/xhtml+xml' $ Lower(cContentType)
+
+		uJsonXml := TXmlManager():New()
+
+		uJsonXml:Parse( uResponse )
+
+	elseif 'application/json' $ Lower(cContentType)
+
+		uJsonXml := JsonObject():New()
+
+		uJsonXml:FromJson( uResponse )
+
+	endif
+
+return Eval( bProcess, cHeaderRet, uResponse, uJsonXml,cHttpCode, cContentType )
+
+static function makeJsonList()
+
+	if nRecSa1 != ( cAlias )->SA1_REC
+
+		aAdd( aRecno, { ( cAlias )->SA1_REC, ( cAlias )->CN9_REC } )
+		aAdd( aJsonList, jsonObject():New() )
+		nRecSa1 := ( cAlias )->SA1_REC
+
+		aTail( aJsonList )['profileId'] := cProfileId
+		aTail( aJsonList )['docNumber'] := AllTrim( ( cAlias )->A1_CGC )
+		aTail( aJsonList )['generalRecord'] := AllTrim( ( cAlias )->A1_PFISICA )
+		aTail( aJsonList )['cellPhNum'] := AllTrim( ( cAlias )->A1_DDD ) + AllTrim( ( cAlias )->A1_TEL )
+		aTail( aJsonList )['dbaName'] := AllTrim( ( cAlias )->A1_NREDUZ )
+		aTail( aJsonList )['companyName'] := AllTrim( ( cAlias )->A1_NOME )
+		aTail( aJsonList )['contactName'] := AllTrim( ( cAlias )->A1_CONTATO )
+		aTail( aJsonList )['email'] := AllTrim( ( cAlias )->A1_EMAIL )
+		aTail( aJsonList )['birthDate'] := ( cAlias )->( Year2Str( A1_DTNASC ) + '-' + Month2Str( A1_DTNASC ) + '-' + Day2Str( A1_DTNASC ) )
+		aTail( aJsonList )['addressData'] := jsonObject():New()
+		aTail( aJsonList )['addressData']['address'] := AllTrim( ( cAlias )->A1_XEND )
+		aTail( aJsonList )['addressData']['addressComplement'] := AllTrim( ( cAlias )->A1_COMPLEM )
+		aTail( aJsonList )['addressData']['addressNumber'] := AllTrim( ( cAlias )->A1_XNR_END )
+		aTail( aJsonList )['addressData']['city'] := AllTrim( ( cAlias )->A1_MUN )
+		aTail( aJsonList )['addressData']['neighborhood'] := AllTrim( ( cAlias )->A1_BAIRRO )
+		aTail( aJsonList )['addressData']['postalCode'] := AllTrim( ( cAlias )->A1_CEP )
+		aTail( aJsonList )['addressData']['state'] := AllTrim( ( cAlias )->A1_EST )
+		aTail( aJsonList )['addressData']['country'] := Upper( AllTrim( ( cAlias )->YA_SIGLA ) )
+		aTail( aJsonList )['termsData'] := { }
+
+	end if
+
+	if nRecCna != ( cAlias )->CNA_REC
+
+		aAdd( aTail( aJsonList )['termsData'], jsonObject():New() )
+		nRecCna := ( cAlias )->CNA_REC
+
+		aTail( aTail( aJsonList )['termsData'] )['startDate'] := ( cAlias )->( Year2Str( CNA_DTINI ) + '-' + Month2Str( CNA_DTINI ) + '-' + Day2Str( CNA_DTINI ) )
+		aTail( aTail( aJsonList )['termsData'] )['endDate'] := ( cAlias )->( Year2Str( CNA_DTFIM ) + '-' + Month2Str( CNA_DTFIM ) + '-' + Day2Str( CNA_DTFIM ) )
+		aTail( aTail( aJsonList )['termsData'] )['days'] := cValToChar( ( cAlias )->CNA_XDIAS )
+		aTail( aTail( aJsonList )['termsData'] )['type'] := AllTrim( ( cAlias )->CNA_XTIPON )
+		aTail( aTail( aJsonList )['termsData'] )['interest'] := cValToChar( ( cAlias )->CNA_XJUROS )
+		aTail( aTail( aJsonList )['termsData'] )['automaticAnticipation'] := IIF( ( cAlias )->CNA_XANTAU == '1', 'Y', 'N' )
+		aTail( aTail( aJsonList )['termsData'] )['maxAnticipationPercent'] := cValToChar( ( cAlias ) ->CNA_XMXANT )
+		aTail( aTail( aJsonList )['termsData'] )['paymentDay'] := cValToChar( ( cAlias ) ->CNA_XPADIA )
+		aTail( aTail( aJsonList )['termsData'] )['oneTimePayment'] := IIF( ( cAlias )->CNA_XPGUNI == '1', 'Y', 'N' )
+		aTail( aTail( aJsonList )['termsData'] )['unitPrice'] := cValToChar( ( cAlias ) ->CNA_XPRCUN )
+		aTail( aTail( aJsonList )['termsData'] )['fixedAmount'] := cValToChar( ( cAlias ) ->CNA_XQTFIX )
+		aTail( aTail( aJsonList )['termsData'] )['anticipationDays'] := cValToChar( ( cAlias ) ->CNA_XANTDI )
+		aTail( aTail( aJsonList )['termsData'] )['terms'] := {}
+
+	end if
+
+	aAdd( aTail( aTail( aJsonList )['termsData'] )['terms'], jsonObject():New() )
+
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['initialInstallment'] := cValToChar( ( cAlias ) ->CNB_XPCINI )
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['finalInstallment'] := cValToChar( ( cAlias ) ->CNB_XPCFIN )
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['rate'] := cValToChar( ( cAlias )->CNB_XESQTX )
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['cardType'] := AllTrim( ( cAlias )->CNB_XTPCAN )
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['fixedAmount'] := cValToChar( ( cAlias )->CNB_XESQTX )
+	aTail( aTail( aTail( aJsonList )['termsData'] )['terms'] )['days'] := cValToChar( ( cAlias )->CNB_XESQTX )
+
+return
+
+static function queryExec()
+
+	BeginSql alias cAlias
+    
+        %NOPARSER%
+
+			COLUMN A1_DTNASC AS DATE
+			COLUMN CNA_DTINI AS DATE
+			COLUMN CNA_DTFIM AS DATE
+
+			SELECT
+
+			 CN9.R_E_C_N_O_ CN9_REC
+			,SA1.R_E_C_N_O_ SA1_REC
+			,SA1.A1_CGC
+			,SA1.A1_PFISICA
+			,SA1.A1_DDD
+			,SA1.A1_TEL
+			,SA1.A1_NREDUZ
+			,SA1.A1_NOME
+			,SA1.A1_CONTATO
+			,SA1.A1_EMAIL
+			,SA1.A1_DTNASC
+			,SA1.A1_XEND
+			,SA1.A1_COMPLEM
+			,SA1.A1_XNR_END
+			,SA1.A1_MUN
+			,SA1.A1_BAIRRO
+			,SA1.A1_CEP
+			,SA1.A1_EST
+			,SYA.YA_SIGLA
+			
+			,CNA.R_E_C_N_O_ CNA_REC 
+			,CNA.CNA_DTINI
+			,CNA.CNA_DTFIM
+			,CNA.CNA_XDIAS
+			,( SELECT TOP 1 X5_DESCRI FROM %TABLE:SX5% SX5 
+				WHERE SX5.%NOTDEL% AND SX5.X5_TABELA = 'Z1' 
+				AND SX5.X5_CHAVE = CNA.CNA_XTIPO 
+				AND SX5.X5_FILIAL = %XFILIAL:SX5% ) CNA_XTIPON
+			,CNA.CNA_XJUROS
+			,CNA.CNA_XANTAU
+			,CNA.CNA_XMXANT
+			,CNA.CNA_XPADIA
+			,CNA.CNA_XPGUNI
+			,CNA.CNA_XPRCUN
+			,CNA.CNA_XQTFIX
+			,CNA.CNA_XANTDI
+			
+			,CNB.CNB_XPCINI
+			,CNB.CNB_XPCFIN
+			,CNB.CNB_XESQTX
+			,( SELECT TOP 1 X5_DESCRI FROM %TABLE:SX5% SX5
+				WHERE SX5.%NOTDEL% AND SX5.X5_TABELA = 'Z2' 
+				AND SX5.X5_CHAVE = CNB.CNB_XTPCAR 
+				AND SX5.X5_FILIAL = %XFILIAL:SX5% ) CNB_XTPCAN
+			,CNB.CNB_XQTFIX
+			,CNB.CNB_XDIAS
+
+			FROM %TABLE:CN9% CN9
+
+			INNER JOIN %TABLE:CNA% CNA
+			ON  CN9.CN9_FILIAL = CNA.CNA_FILIAL
+			AND CN9.CN9_NUMERO = CNA.CNA_CONTRA
+			AND CN9.CN9_REVISA = CNA.CNA_REVISA
+			AND CN9.D_E_L_E_T_ = CNA.D_E_L_E_T_
+
+			INNER JOIN %TABLE:CNB% CNB
+			ON  CNA.CNA_FILIAL = CNB.CNB_FILIAL
+			AND CNA.CNA_CONTRA = CNB.CNB_CONTRA
+			AND CNA.CNA_REVISA = CNB.CNB_REVISA
+			AND CNA.D_E_L_E_T_ = CNB.D_E_L_E_T_
+
+			INNER JOIN %TABLE:SA1% SA1
+			ON  CNA.CNA_CLIENT = SA1.A1_COD
+			AND CNA.CNA_LOJACL = SA1.A1_LOJA
+			AND CNA.D_E_L_E_T_ = CNA.D_E_L_E_T_
+
+			LEFT JOIN %TABLE:SYA% SYA
+			ON  SA1.A1_PAIS = SYA.YA_CODGI
+			AND SA1.D_E_L_E_T_ = SYA.D_E_L_E_T_
+
+			WHERE CN9.CN9_FILIAL = %XFILIAL:CN9% 
+			AND CN9.CN9_SITUAC = '05'
+			AND CN9.%NOTDEL%
+			AND SA1.A1_FILIAL  = %XFILIAL:SA1%
+			AND ( CN9.CN9_XENVID = '2' OR SA1.A1_XENVIAD = '2' )
+
+			ORDER BY SA1.R_E_C_N_O_, CNA.R_E_C_N_O_, CNB.R_E_C_N_O_
+
+	EndSql
+
+return
+

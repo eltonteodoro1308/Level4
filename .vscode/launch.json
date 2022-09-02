@@ -1,0 +1,60 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "Depuração do idioma TOTVS",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:/TOTVS/SmartClient_Harpia/smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"label": "u_tstPrcGn"
+		},
+		{
+			"label": "sigacfg"
+		},
+		{
+			"label": "u_tstsprcgn"
+		},
+		{
+			"label": "u_tstpSendQuery"
+		},
+		{
+			"label": "u_tstx3obgt"
+		},
+		{
+			"label": "U_tstpSendPocketPay"
+		},
+		{
+			"label": "sigamdi"
+		},
+		{
+			"label": "u_CNTAX002"
+		},
+		{
+			"label": "u_elapInt"
+		},
+		{
+			"label": "u_tstInt"
+		},
+		{
+			"label": "SIGAESP"
+		},
+		{
+			"label": "U_ProcLog"
+		},
+		{
+			"label": "APSDU"
+		},
+		{
+			"label": "SIGACTF"
+		}
+	],
+	"lastProgramExecuted": "sigamdi"
+}

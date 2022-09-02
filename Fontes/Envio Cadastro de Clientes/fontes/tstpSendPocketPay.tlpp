@@ -1,0 +1,8 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+
+user function tstpSendPocketPay()
+
+	u_pSendPocketPay( {'01','0301','',''} )
+
+return

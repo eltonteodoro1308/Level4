@@ -1,0 +1,7 @@
+- Concessionárias: Contratos com valores médios como provisão no financeiro e na medição gera o título com valor real (Ex.: Água, Luz )
+
+- Aluguel: Valor fixo de aluguel e condomínio que pode ter cobranças fixas e eventuais 
+
+- Seguros: 
+
+- 

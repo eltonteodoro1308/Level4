@@ -1,0 +1,7 @@
+- Gerar nota direto com a soma do spreed.
+- Quando ativar o contrato (tornar vigente) cadastrar o cliente como fornecedor e enviar os dados do cliente para a pocket.
+- Só processamento sem relatório de conferência.
+- Exibir na tela o número da nota.
+- sem opção de concelamento do processamento.
+- sem opção de emissão de relatórios.
+- Verificar com adriana envio automático da nfs-e com Adriana.

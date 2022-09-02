@@ -1,0 +1,35 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+#include "totvs.ch"
+
+@post("fake/psendquery")
+user function WsFake()
+
+	local aHttpCode := { 200, 400, 401, 403, 404, 500}
+	local jHeader   := oRest:getHeaderRequest()
+	local jBody     := jsonObject():New()
+	local jReturn   := jsonObject():new()
+	local aReturn   := {}
+
+	oRest:setStatusCode( aHttpCode[ random( 1, len( aHttpCode ) ) ] )
+	oRest:setKeyHeaderResponse('Content-Type','application/json')
+
+	if  jHeader <> nil
+
+		aAdd( aReturn, jHeader )
+
+	endif
+
+	if ! Empty( oRest:getBodyRequest() )
+
+		jBody:fromJson( oRest:getBodyRequest() )
+
+		aAdd( aReturn, jBody )
+
+	end if
+
+	jReturn:set( aReturn )
+
+	oRest:SetResponse( jReturn )
+
+return
