@@ -3,3 +3,7 @@ smartclient_prd/*
 smartclient_tst/*
 !smartclient_prd/smartclient.ini
 !smartclient_tst/smartclient.ini
+Mit_s/*
+!Mit_s/*.docx
+!Mit_s/*.xlsx
+!Mit_s/*.png
