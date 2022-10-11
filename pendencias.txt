@@ -1,0 +1,16 @@
+- Campo Standard pocket pay
+- Tratar que o endereço seja o campo A1_END onde logradouro e número seja separados por vírgula
+- Método GET com consulta de lista de títulos baixas em um intervalo de tempo
+- Implementar no json o envio do campo sllerid com o código do vendedor
+- Verificar 
+
+* Tarefa na amarração rec x contrato um campo de tarefa
+- Campo intervalo no apontamento com 1 hora default
+- Escopo fechado não pode gerar medição por apontamento.
+- tratar o excende da medição
+- Tratar cenário onde o contrato abrange dois fornecedores (casados)
+- Um recurso pode ter mais de um contrato visto que o valor hora pode ser diferente
+- Um cliente pode mais de um contrato com valor hora diferentes e também com valor fixo onde não recebe apontamento
+- Marcar apontamento 
+
+- Compartilhamento tabelas

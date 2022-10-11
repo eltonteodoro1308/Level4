@@ -54,7 +54,13 @@
 		},
 		{
 			"label": "SIGACTF"
+		},
+		{
+			"label": "SIGAGCT"
+		},
+		{
+			"label": "U__CFGX013"
 		}
 	],
-	"lastProgramExecuted": "sigamdi"
+	"lastProgramExecuted": "SIGAGCT"
 }

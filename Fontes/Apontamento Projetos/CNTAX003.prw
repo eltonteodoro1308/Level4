@@ -1,218 +1,415 @@
 #Include "TOTVS.ch"
 #Include "FWMVCDEF.ch"
 
-Static lAdminApto := aScan( UsrRetGrp( __cUserID ), {|item| AllTrim( item ) == GetMv( 'MX_GRPADM' ) } ) != 0
-
 User Function CNTAX003()
 
-	Local oBrowse  := FwLoadBrw("CNTAX003")
+	local nRet      := 0
+	local aBotoes   := {}
+	local cTitulo   := 'Processamento dos Apontamentos'
+	local cMsg      := ''
+	local cSair     := 'Sair'
+	local cPerApto  := 'Período de Apontamento'
+	local cPrcCtRec := 'Processar Recursos'
+	local cPrcCtCli := 'Processar Clientes'
+	local uMesApto  := nil
 
-	Private cUserRec := ''
+	aAdd( aBotoes, cSair )
+	aAdd( aBotoes, cPerApto )
+	aAdd( aBotoes, cPrcCtRec )
+	aAdd( aBotoes, cPrcCtCli )
 
-	if lAdminApto
+	while .T.
 
-		if Pergunte( 'CNTAX003' )
+		uMesApto := GetMv( 'MX_APTOMES' )
+		uMesApto := Month2Str( uMesApto ) + '/' + Year2Str( uMesApto )
 
-			cUserRec := MV_PAR01
+		cMsg := 'Período em aberto para apontamentos: ' + uMesApto + '.' + CRLF
+		cMsg += 'Empresa: ' + AllTrim( cFilAnt )
+		cMsg += ' - ' + AllTrim( FWFilName( cEmpAnt, cFilAnt ) )
+
+		nRet := Aviso( cTitulo, cMsg, aBotoes, 3 )
+
+		if aBotoes[ nRet ] == cSair
+
+			exit
+
+		elseif aBotoes[ nRet ] == cPerApto
+
+			if pergunte('CNTAX004A')
+
+				uMesApto := cToD( '01/' + SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 ) )
+
+				if ! empty( uMesApto )
+
+					PutMv( 'MX_APTOMES', uMesApto )
+
+				else
+
+					ApMsgStop( 'Período inválido', 'Atenção !!!' )
+
+				end if
+
+			end if
+
+		elseif aBotoes[ nRet ] == cPrcCtCli
+
+			frmCtCli()
+
+		elseif aBotoes[ nRet ] == cPrcCtRec
+
+			frmCtRec()
 
 		end if
 
-	else
-
-		cUserRec := __cUserID
-
 	end
-
-	Z00->( DbSetOrder( 1 ) )
-
-	if Z00->( DbSeek( xFilial('Z00') + cUserRec ) )
-
-		oBrowse:Activate()
-
-	else
-
-		ApMsgStop( 'O usuário ' + UsrRetName( cUserRec ) + ' deve estar cadastrado como um recurso.', 'Atenção !!!' )
-
-	end if
 
 Return
 
-Static Function BrowseDef()
+static function frmCtCli()
 
-	Local oBrowse := FwMBrowse():New()
+	local cTitulo := 'Processamento de Clientes'
+	local aTexto  := {}
+	local aBotoes := {}
 
-	oBrowse:SetAlias("Z03")
-	oBrowse:SetDescription("Apontamentos")
+	aAdd( aTexto, 'Rotina de processamento dos apontamentos dos recursos nos clientes' )
+	aAdd( aTexto, 'para geração das medições dos contratos de vendas.' )
 
-	oBrowse:SetFilterDefault( "Z03->Z03_RECURS == cUserRec" )
+	aAdd( aBotoes, { 15, .T., {|| procLogView(,'PRCCTCLI') } } ) // Visualizar
+	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX004B' )  } } ) // Parâmetros
+	aAdd( aBotoes, { 02, .T., {|| fechaBatch()             } } ) // Cancelar
+	aAdd( aBotoes, { 01, .T., {|| prcCtCli(),FechaBatch()  } } ) // Ok
 
-	oBrowse:SetMenuDef("CNTAX003")
+	FormBatch( cTitulo, aTexto, aBotoes, /*bValid*/, /*nAltura>*/, /*nLargura*/)
 
-Return oBrowse
+return
 
+static function prcCtCli()
 
-Static Function MenuDef()
+	local cAlias     := ''
+	local cClientDe  := ''
+	local cLojaDe    := ''
+	local cClientAte := ''
+	local cLojaAte   := ''
+	local cContrDe   := ''
+	local cContrAte  := ''
+	local dDataDe    := CtoD('')
+	local dDataAte   := CtoD('')
+	local cIdCV8     := ''
 
-Return FwMvcMenu( 'CNTAX003' )
+	if pergunte( 'CNTAX004B' )
 
-Static Function ModelDef()
+		cAlias     := getNextAlias()
+		cClientDe  := MV_PAR01
+		cLojaDe    := MV_PAR02
+		cClientAte := MV_PAR03
+		cLojaAte   := MV_PAR04
+		cContrDe   := MV_PAR05
+		cContrAte  := MV_PAR06
+		cCompent   := SubStr( MV_PAR07, 1, 2 ) + '/' + SubStr( MV_PAR07, 3, 4 )
+		dDataDe    := cToD( '01/' + cCompent )
+		dDataAte   := LastDay( dDataDe )
 
-	Local oModel    := MPFormModel():New("CNTAM003",, { | oModel | TudoOk( oModel ) } )
-	Local oStru     := FwFormStruct(1, "Z03")
+		if Empty( dDataDe )
 
+			ApMsgStop( 'Período informado inválido.', 'Atenção' )
 
-	oModel:AddFields("MASTER", NIL, oStru )
+		else
 
-	oModel:SetDescription("Recursos x Contratos")
+			If Select(cAlias) <> 0
 
-	oModel:GetModel("MASTER"):SetDescription("Apontamentos")
+				(cAlias)->(DbCloseArea())
 
-Return oModel
+			EndIf
 
-Static Function ViewDef()
+			BeginSql alias cAlias
+		
+				%NOPARSER%
 
-	Local oView := FwFormView():New()
-	Local oStru := FwFormStruct(2, "Z03")
-	Local oModel := FwLoadModel("CNTAX003")
+				SELECT Z03.Z03_CONTRA, SUM( Z03.Z03_QTDHRS ) Z03_QTDHRS FROM %TABLE:Z03% Z03
 
-	oView:SetModel(oModel)
+				INNER JOIN %TABLE:CN9% CN9
+				ON  Z03.Z03_FILIAL = CN9.CN9_FILIAL
+				AND Z03.D_E_L_E_T_ = CN9.D_E_L_E_T_
+				AND Z03.Z03_CONTRA = CN9.CN9_NUMERO
 
-	oView:AddField("VIEW", oStru, "MASTER")
+				INNER JOIN %TABLE:CN1% CN1
+				ON CN9.CN9_FILIAL = CN1.CN1_FILIAL
+				AND CN9.CN9_TPCTO = CN1.CN1_CODIGO
+				AND CN9.D_E_L_E_T_ = CN1.D_E_L_E_T_
 
-	oView:CreateHorizontalBox("TELA" , 100)
+				WHERE Z03.%NOTDEL%
+				AND Z03.Z03_FILIAL = %XFILIAL:Z03%
+				AND Z03.Z03_DTINIC BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
+				AND Z03.Z03_DTFIM  BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
+				AND CN9.CN9_SITUAC = '05'
+				AND CN9.CN9_NUMERO BETWEEN %EXP:cContrDe% AND %EXP:cContrAte%
+				AND CN1.CN1_ESPCTR = '2'
+				*//Verifica se o contrato tem apenas um cliente vinculado
+				AND ( 
+					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
+					WHERE CNC.%NOTDEL% 
+					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
+					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
+					) = 1
+				*//Verifica se o cliente vinculado é o cliente informado nos parâmetros
+				AND ( 
+					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
+					WHERE CNC.%NOTDEL% 
+					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
+					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
+					AND CNC.CNC_CLIENT BETWEEN %EXP:cClientDe% AND %EXP:cClientAte% 
+					AND CNC.CNC_CLIENT BETWEEN %EXP:cLojaDe% AND %EXP:cLojaAte% 
+					) <> 0
 
-	oView:SetOwnerView("VIEW", "TELA")
+				GROUP BY Z03.Z03_CONTRA
+		
+			EndSql
 
-Return oView
+			procLogIni(,,,@cIdCV8)
+			ProcLogAtu('INICIO',,,,.T.)
 
-static function TudoOk( oModel )
+			if ( cAlias )->( Eof() )
 
-	Local cRecurso  := FwFldGet( 'Z03_RECURS' )
-	Local cContrato := FwFldGet( 'Z03_CONTRA' )
-	Local dDtIni    := FwFldGet( 'Z03_DTINIC' )
-	Local cDtIni    := DtoS( dDtIni )
-	Local cHrIni    := FwFldGet( 'Z03_HRINIC' )
-	Local dDtFim    := FwFldGet( 'Z03_DTFIM'  )
-	Local cDtFim    := DtoS( dDtFim )
-	Local cHrFim    := FwFldGet( 'Z03_HRFIM' )
-	Local cAlias    := GetNextAlias()
-	Local nCount    := 0
-	Local dPerIni   := FirstDate( GetMv( 'MX_APTOMES' ) )
-	Local dPerFim   := LastDate( dPerIni )
+				ProcLogAtu('MENSAGEM', 'Não há registros a serem processados.',,,.T.)
 
-	if ! cValToChar( oModel:nOperation ) $ '349'
+			else
 
-		return .T.
+				While ( cAlias )->( !Eof() )
 
-	end if
+					( cAlias )->(  msgRun( 'Contrato: ' + AllTrim( Z03_CONTRA ) +;
+						' - Competência: ' + allTrim( cCompent ), 'Processando Contratos de Clientes ...',;
+						{||incMedicao( Z03_CONTRA, Z03_QTDHRS, cCompent ) } ) )
 
-	if  ! lAdminApto .And. ! ( dDtIni >= dPerIni .And. dDtFim <= dPerFim )
+					( cAlias )->( DbSkip() )
 
-		Help(,, "CNTAX003",, 'Período bloqueado para apontamentos.', 1, 0,,,,,,;
-			{'O período aberto para apontamentos é de ' + dToC( dPerIni ) + ' a ' + dToC( dPerFim ) + '.'})
+				EndDo
 
-		Return .F.
+			end if
 
-	end if
+			ProcLogAtu('FIM',,,,.T.)
+			procLogView(,,,@cIdCV8)
 
-	if FirstDate( dDtIni ) != FirstDate( dDtFim )
+			(cAlias)->(DbCloseArea())
 
-		Help(,, "CNTAX003",, 'A data de início e a data final do apontamento devem estar dentro do mesmo mês/ano.', 1, 0,,,,,,;
-			{'Informe um intervalo válido.'})
-
-		Return .F.
-
-	end if
-
-	if cDtIni + cHrIni >= cDtFim + cHrFim
-
-		Help(,, "CNTAX003",, 'A Data/Hora início deve ser anterior a Data/Hora final do Apontamento.', 1, 0,,,,,,;
-			{'Informe um intervalo válido.'})
-
-		Return .F.
-
-	end if
-
-	If Select(cAlias) <> 0
-
-		( cAlias )->( DbCloseArea() )
-
-	EndIf
-
-	BeginSql alias cAlias
-	
-		%NOPARSER%
-
-		SELECT COUNT(*) COUNT FROM %TABLE:Z03% Z03
-
-		WHERE Z03.%NOTDEL%
-		AND Z03.Z03_FILIAL = %XFILIAL:Z03%
-		AND Z03.Z03_RECURS = %EXP:cRecurso%
-		AND Z03.Z03_CONTRA = %EXP:cContrato%
-		AND
-			(
-				%EXP:cDtIni + cHrIni% BETWEEN Z03.Z03_DTINIC + Z03.Z03_HRINIC AND Z03.Z03_DTFIM + Z03.Z03_HRFIM OR
-				%EXP:cDtFim + cHrFim% BETWEEN Z03.Z03_DTINIC + Z03.Z03_HRINIC AND Z03.Z03_DTFIM + Z03.Z03_HRFIM 
-			)
-		*// Em caso de alteração desconsidera o registro posicionado na consulta
-		AND ( 
-				Z03.R_E_C_N_O_ <>  
-				
-				CASE WHEN %EXP:oModel:nOperation% = 4 THEN
-
-					%EXP: Z03->( Recno() )%
-
-				ELSE
-
-					0
-
-				END			
-			)
-
-	EndSql
-
-	nCount := (cAlias)->COUNT
-
-	(cAlias)->(DbCloseArea())
-
-	if nCount > 0
-
-		Help(,, "CNTAX003",, 'Já existe apontamento neste intervalo de data/hora.', 1, 0,,,,,, {'Informe um intervalo válido.'})
-
-		Return .F.
+		end if
 
 	end if
 
-	FwFldPut( 'Z03_QTDHRS', elapInt( dDtIni, cHrIni, dDtFim, cHrFim ),,,, .T. )
+return
 
-return .T.
+static function frmCtRec()
 
-static function elapInt( dDataIni, cHoraIni, dDataFim, cHoraFim )
+	local cTitulo := 'Processamento de Recursos'
+	local aTexto  := {}
+	local aBotoes := {}
 
-	Local nRet     := 0
-	Local nHoraIni := val( cHoraIni ) / 100
-	Local nHoraFim := val( cHoraFim ) / 100
-	Local nHora    := 0
+	aAdd( aTexto, 'Rotina de processamento dos apontamentos dos recursos' )
+	aAdd( aTexto, 'para geração das medições dos contratos de compras.' )
 
-	nHora := DataHora2Val( dDataIni, nHoraIni, dDataFim, nHoraFim, 'H' )
+	aAdd( aBotoes, { 15, .T., {|| procLogView(,'PRCCTREC') } } ) // Visualizar
+	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX004C' )  } } ) // Parâmetros
+	aAdd( aBotoes, { 02, .T., {|| fechaBatch()             } } ) // Cancelar
+	aAdd( aBotoes, { 01, .T., {|| prcCtRec(),FechaBatch()  } } ) // Ok
 
-	nRet := round( int( nHora ) + ( ( nHora - int( nHora ) ) / 0.6 ), 2 )
+	FormBatch( cTitulo, aTexto, aBotoes, /*bValid*/, /*nAltura>*/, /*nLargura*/)
 
-return nRet
+return
 
-user function vldFrmHr( cTime )
+static function prcCtRec()
 
-	local lRet    := .T.
-	local cHora   := subStr( cTime, 1, 2 )
-	local cMinuto := subStr( cTime, 3, 2 )
+	local cAlias     := ''
+	local cRecursDe  := ''
+	local cRecursAte := ''
+	local dDataDe    := CtoD('')
+	local dDataAte   := CtoD('')
+	local cIdCV8     := ''
 
-	lRet := lRet .And. ! Empty( cHora )
-	lRet := lRet .And. ! Empty( cMinuto )
-	lRet := lRet .And. val( cHora   ) >= 00
-	lRet := lRet .And. val( cHora   ) <= 23
-	lRet := lRet .And. val( cMinuto ) >= 00
-	lRet := lRet .And. val( cMinuto ) <= 59
+	if pergunte( 'CNTAX004C' )
 
-return lRet
+		cAlias     := getNextAlias()
+		cRecursDe  := MV_PAR01
+		cRecursAte := MV_PAR02
+		cCompent   := SubStr( MV_PAR03, 1, 2 ) + '/' + SubStr( MV_PAR03, 3, 4 )
+		dDataDe    := cToD( '01/' + cCompent )
+		dDataAte   := LastDay( dDataDe )
+
+		if Empty( dDataDe )
+
+			ApMsgStop( 'Período informado inválido.', 'Atenção' )
+
+		else
+
+			If Select(cAlias) <> 0
+
+				(cAlias)->(DbCloseArea())
+
+			EndIf
+
+			BeginSql alias cAlias
+		
+				%NOPARSER%
+
+				SELECT CN9.CN9_NUMERO, SUM( Z03.Z03_QTDHRS ) Z03_QTDHRS FROM %TABLE:Z03% Z03
+
+				INNER JOIN %TABLE:Z00% Z00
+				ON  Z03.Z03_FILIAL = Z00.Z00_FILIAL
+				AND Z03.D_E_L_E_T_ = Z00.D_E_L_E_T_
+				AND Z03.Z03_RECURS = Z00.Z00_CODIGO
+
+				INNER JOIN %TABLE:CN9% CN9
+				ON  Z00.Z00_FILIAL = CN9.CN9_FILIAL
+				AND Z00.D_E_L_E_T_ = CN9.D_E_L_E_T_
+				AND Z00.Z00_CONTRA = CN9.CN9_NUMERO
+
+				INNER JOIN %TABLE:CN1% CN1
+				ON CN9.CN9_FILIAL = CN1.CN1_FILIAL
+				AND CN9.CN9_TPCTO = CN1.CN1_CODIGO
+				AND CN9.D_E_L_E_T_ = CN1.D_E_L_E_T_
+
+				WHERE Z03.%NOTDEL%
+				AND Z03.Z03_FILIAL = %XFILIAL:Z03%
+				AND Z03.Z03_DTINIC BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
+				AND Z03.Z03_DTFIM  BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
+				AND CN9.CN9_SITUAC = '05'
+				AND Z03.Z03_RECURS BETWEEN %EXP:cRecursDe% AND %EXP:cRecursAte%
+				AND CN1.CN1_ESPCTR = '1'
+
+				*//Verifica se o contrato tem apenas um fornecedor vinculado
+				AND ( 
+					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
+					WHERE CNC.%NOTDEL% 
+					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
+					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
+					) = 1
+
+				GROUP BY CN9.CN9_NUMERO
+		
+			EndSql
+
+			procLogIni(,,,@cIdCV8)
+			ProcLogAtu('INICIO',,,,.T.)
+
+			if ( cAlias )->( Eof() )
+
+				ProcLogAtu('MENSAGEM', 'Não há registros a serem processados.',,,.T.)
+
+			else
+
+				While ( cAlias )->( !Eof() )
+
+					( cAlias )->(  msgRun( 'Contrato: ' + AllTrim( CN9_NUMERO ) +;
+						' - Competência: ' + allTrim( cCompent ), 'Processando Contratos de Recursos ...',;
+						{||incMedicao( CN9_NUMERO, Z03_QTDHRS, cCompent ) } ) )
+
+					( cAlias )->( DbSkip() )
+
+				EndDo
+
+			end if
+
+			ProcLogAtu('FIM',,,,.T.)
+			procLogView(,,,@cIdCV8)
+
+			(cAlias)->(DbCloseArea())
+
+		end if
+
+	end if
+
+return
+
+static function incMedicao( cContrato, nQtdHoras, cCompet )
 
 
+	Local oModel    := Nil
+	Local aCompets  := {}
+	Local nCompet   := 0
+	Local cNumMed   := ""
+	Local aMsgDeErro:= {}
+	Local cMsgDeErro:= ''
+	Local aArea     := GetArea()
+
+	DbSelectArea('CN9')
+	CN9->(DbSetOrder(1))
+
+	If ! CN9->( DbSeek( xFilial( "CN9" ) + cContrato ) )//Posicionar na CN9 para realizar a inclusão
+
+		ProcLogAtu( 'ERRO', 'Contrato inválido.', 'O contrato ' + cContrato + ' não é válido para a Filial ' + cFilAnt,,.T.)
+
+	else
+
+		aCompets := CtrCompets()
+
+		if Empty( nCompet := aScan( aCompets, { | cItem | allTrim( cItem ) == allTrim( cCompet ) } ) )
+
+			ProcLogAtu( 'ERRO', 'Competência inválida.',;
+				'A competência ' + cCompet + ' não é válida para o contrato ' + cContrato,,.T.)
+
+		else
+
+			oModel := FWLoadModel("CNTA121")
+
+			oModel:SetOperation(MODEL_OPERATION_INSERT)
+
+			If oModel:CanActivate()
+
+				oModel:Activate()
+				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
+
+
+				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
+
+				oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)//Marcar a planilha(nesse caso apenas uma)
+				oModel:GetModel('CNEDETAIL'):GoLine(1)
+				oModel:SetValue( 'CNEDETAIL' , 'CNE_QUANT', nQtdHoras )
+
+				If (oModel:VldData()) /*Valida o modelo como um todo*/
+
+					oModel:CommitData()
+
+				EndIf
+
+			EndIf
+
+			If( oModel:HasErrorMessage() )
+
+				aMsgDeErro := oModel:GetErrorMessage()
+
+				ascan( aMsgDeErro, { | cItem | cMsgDeErro += allTrim( cItem ) } )
+
+				ProcLogAtu('ERRO', 'Erro no Processamento do contrato ' + cContrato, cMsgDeErro,,.T.)
+
+			Else
+
+				cNumMed := CND->CND_NUMMED
+
+				oModel:DeActivate()
+
+				ProcLogAtu('MENSAGEM', 'Gerada a Medição ' + cNumMed,,,.T.)
+
+				if CN121Encerr(.T.) //Realiza o encerramento da medição
+
+					ProcLogAtu('MENSAGEM', 'Medição ' + cNumMed + ' encerrada.',,,.T.)
+
+				else
+
+					ProcLogAtu('ERRO', 'Medição ' + cNumMed + ' não pode ser encerrada.',,,.T.)
+
+				end if
+
+			EndIf
+
+		end if
+
+	end if
+
+	RestArea( aArea )
+
+Return
+
+// ProcLogAtu('INICIO', 'Início do processamnto do contrato',,,.T.)
+// ProcLogAtu('ALERTA', 'Alerta de processamento',,,.T.)
+// ProcLogAtu('ERRO', 'Erro no Processamento',,,.T.)
+// ProcLogAtu('CANCEL', 'Processamento Cancelado',,,.T.)
+// ProcLogAtu('MENSAGEM', 'Mensagem do Processamento',,,.T.)
+// ProcLogAtu('FIM', 'Fim do processamento',,,.T.)
