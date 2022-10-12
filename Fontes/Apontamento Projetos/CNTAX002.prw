@@ -23,9 +23,9 @@ User Function CNTAX002()
 
 	end
 
-	Z00->( DbSetOrder( 1 ) )
+	SZZ->( DbSetOrder( 1 ) )
 
-	if Z00->( DbSeek( xFilial('Z00') + cUserRec ) )
+	if SZZ->( DbSeek( xFilial('SZZ') + cUserRec ) )
 
 		oBrowse:Activate()
 
@@ -41,10 +41,10 @@ Static Function BrowseDef()
 
 	Local oBrowse := FwMBrowse():New()
 
-	oBrowse:SetAlias("Z03")
+	oBrowse:SetAlias("SZB")
 	oBrowse:SetDescription("Apontamentos")
 
-	oBrowse:SetFilterDefault( "Z03->Z03_RECURS == cUserRec" )
+	oBrowse:SetFilterDefault( "SZB->ZB_RECURS == cUserRec" )
 
 	oBrowse:SetMenuDef("CNTAX002")
 
@@ -58,7 +58,7 @@ Return FwMvcMenu( 'CNTAX002' )
 Static Function ModelDef()
 
 	Local oModel    := MPFormModel():New("CNTAM003",, { | oModel | TudoOk( oModel ) } )
-	Local oStru     := FwFormStruct(1, "Z03")
+	Local oStru     := FwFormStruct(1, "SZB")
 
 
 	oModel:AddFields("MASTER", NIL, oStru )
@@ -72,7 +72,7 @@ Return oModel
 Static Function ViewDef()
 
 	Local oView := FwFormView():New()
-	Local oStru := FwFormStruct(2, "Z03")
+	Local oStru := FwFormStruct(2, "SZB")
 	Local oModel := FwLoadModel("CNTAX002")
 
 	oView:SetModel(oModel)
@@ -87,18 +87,18 @@ Return oView
 
 static function TudoOk( oModel )
 
-	Local cRecurso  := FwFldGet( 'Z03_RECURS' )
-	Local cContrato := FwFldGet( 'Z03_CONTRA' )
-	Local dDtIni    := FwFldGet( 'Z03_DTINIC' )
-	Local cDtIni    := DtoS( dDtIni )
-	Local cHrIni    := FwFldGet( 'Z03_HRINIC' )
-	Local dDtFim    := FwFldGet( 'Z03_DTFIM'  )
-	Local cDtFim    := DtoS( dDtFim )
-	Local cHrFim    := FwFldGet( 'Z03_HRFIM' )
-	Local cAlias    := GetNextAlias()
-	Local nCount    := 0
-	Local dPerIni   := FirstDate( GetMv( 'MX_APTOMES' ) )
-	Local dPerFim   := LastDate( dPerIni )
+	Local cRecurso := FwFldGet( 'ZB_RECURS' )
+	Local cTarefa  := FwFldGet( 'ZB_TAREFA' )
+	Local dDtIni   := FwFldGet( 'ZB_DTINIC' )
+	Local cDtIni   := DtoS( dDtIni )
+	Local cHrIni   := FwFldGet( 'ZB_HRINIC' )
+	Local dDtFim   := FwFldGet( 'ZB_DTFIM'  )
+	Local cDtFim   := DtoS( dDtFim )
+	Local cHrFim   := FwFldGet( 'ZB_HRFIM' )
+	Local cAlias   := GetNextAlias()
+	Local nCount   := 0
+	Local dPerIni  := FirstDate( GetMv( 'MX_APTOMES' ) )
+	Local dPerFim  := LastDate( dPerIni )
 
 	if ! cValToChar( oModel:nOperation ) $ '349'
 
@@ -143,24 +143,24 @@ static function TudoOk( oModel )
 	
 		%NOPARSER%
 
-		SELECT COUNT(*) COUNT FROM %TABLE:Z03% Z03
+		SELECT COUNT(*) COUNT FROM %TABLE:SZB% SZB
 
-		WHERE Z03.%NOTDEL%
-		AND Z03.Z03_FILIAL = %XFILIAL:Z03%
-		AND Z03.Z03_RECURS = %EXP:cRecurso%
-		AND Z03.Z03_CONTRA = %EXP:cContrato%
+		WHERE SZB.%NOTDEL%
+		AND SZB.ZB_FILIAL = %XFILIAL:SZB%
+		AND SZB.ZB_RECURS = %EXP:cRecurso%
+		AND SZB.ZB_CONTRA = %EXP:cTarefa%
 		AND
 			(
-				%EXP:cDtIni + cHrIni% BETWEEN Z03.Z03_DTINIC + Z03.Z03_HRINIC AND Z03.Z03_DTFIM + Z03.Z03_HRFIM OR
-				%EXP:cDtFim + cHrFim% BETWEEN Z03.Z03_DTINIC + Z03.Z03_HRINIC AND Z03.Z03_DTFIM + Z03.Z03_HRFIM 
+				%EXP:cDtIni + cHrIni% BETWEEN SZB.ZB_DTINIC + SZB.ZB_HRINIC AND SZB.ZB_DTFIM + SZB.ZB_HRFIM OR
+				%EXP:cDtFim + cHrFim% BETWEEN SZB.ZB_DTINIC + SZB.ZB_HRINIC AND SZB.ZB_DTFIM + SZB.ZB_HRFIM 
 			)
 		*// Em caso de alteração desconsidera o registro posicionado na consulta
 		AND ( 
-				Z03.R_E_C_N_O_ <>  
+				SZB.R_E_C_N_O_ <>  
 				
 				CASE WHEN %EXP:oModel:nOperation% = 4 THEN
 
-					%EXP: Z03->( Recno() )%
+					%EXP: SZB->( Recno() )%
 
 				ELSE
 
@@ -183,7 +183,7 @@ static function TudoOk( oModel )
 
 	end if
 
-	FwFldPut( 'Z03_QTDHRS', elapInt( dDtIni, cHrIni, dDtFim, cHrFim ),,,, .T. )
+	FwFldPut( 'ZB_QTDHRS', elapInt( dDtIni, cHrIni, dDtFim, cHrFim ),,,, .T. )
 
 return .T.
 
