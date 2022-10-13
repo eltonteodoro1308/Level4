@@ -392,7 +392,7 @@ static function incMedicao( jContrato ) // cContrato / nQtdHoras / cCompet
 				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
 
 				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
-
+//TODO TRATAR AQUI A VERIFICAÇÃO DA HORAS EXCEDENTES.
 				oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)//Marcar a planilha(nesse caso apenas uma)
 				oModel:GetModel('CNEDETAIL'):GoLine(1)
 				oModel:SetValue( 'CNEDETAIL' , 'CNE_QUANT', nQtdHoras )
