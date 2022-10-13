@@ -35,7 +35,7 @@ User Function CNTAX003()
 
 		elseif aBotoes[ nRet ] == cPerApto
 
-			if pergunte('CNTAX004A')
+			if pergunte('CNTAX003A')
 
 				uMesApto := cToD( '01/' + SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 ) )
 
@@ -75,7 +75,7 @@ static function frmCtCli()
 	aAdd( aTexto, 'para geração das medições dos contratos de vendas.' )
 
 	aAdd( aBotoes, { 15, .T., {|| procLogView(,'PRCCTCLI') } } ) // Visualizar
-	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX004B' )  } } ) // Parâmetros
+	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX003B' )  } } ) // Parâmetros
 	aAdd( aBotoes, { 02, .T., {|| fechaBatch()             } } ) // Cancelar
 	aAdd( aBotoes, { 01, .T., {|| prcCtCli(),FechaBatch()  } } ) // Ok
 
@@ -86,26 +86,13 @@ return
 static function prcCtCli()
 
 	local cAlias     := ''
-	local cClientDe  := ''
-	local cLojaDe    := ''
-	local cClientAte := ''
-	local cLojaAte   := ''
-	local cContrDe   := ''
-	local cContrAte  := ''
-	local dDataDe    := CtoD('')
-	local dDataAte   := CtoD('')
+	local cCompent   := ''
 	local cIdCV8     := ''
 
-	if pergunte( 'CNTAX004B' )
+	if pergunte( 'CNTAX003B' )
 
 		cAlias     := getNextAlias()
-		cClientDe  := MV_PAR01
-		cLojaDe    := MV_PAR02
-		cClientAte := MV_PAR03
-		cLojaAte   := MV_PAR04
-		cContrDe   := MV_PAR05
-		cContrAte  := MV_PAR06
-		cCompent   := SubStr( MV_PAR07, 1, 2 ) + '/' + SubStr( MV_PAR07, 3, 4 )
+		cCompent   := SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 )
 		dDataDe    := cToD( '01/' + cCompent )
 		dDataAte   := LastDay( dDataDe )
 
@@ -125,43 +112,7 @@ static function prcCtCli()
 		
 				%NOPARSER%
 
-				SELECT Z03.Z03_CONTRA, SUM( Z03.Z03_QTDHRS ) Z03_QTDHRS FROM %TABLE:Z03% Z03
-
-				INNER JOIN %TABLE:CN9% CN9
-				ON  Z03.Z03_FILIAL = CN9.CN9_FILIAL
-				AND Z03.D_E_L_E_T_ = CN9.D_E_L_E_T_
-				AND Z03.Z03_CONTRA = CN9.CN9_NUMERO
-
-				INNER JOIN %TABLE:CN1% CN1
-				ON CN9.CN9_FILIAL = CN1.CN1_FILIAL
-				AND CN9.CN9_TPCTO = CN1.CN1_CODIGO
-				AND CN9.D_E_L_E_T_ = CN1.D_E_L_E_T_
-
-				WHERE Z03.%NOTDEL%
-				AND Z03.Z03_FILIAL = %XFILIAL:Z03%
-				AND Z03.Z03_DTINIC BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
-				AND Z03.Z03_DTFIM  BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
-				AND CN9.CN9_SITUAC = '05'
-				AND CN9.CN9_NUMERO BETWEEN %EXP:cContrDe% AND %EXP:cContrAte%
-				AND CN1.CN1_ESPCTR = '2'
-				*//Verifica se o contrato tem apenas um cliente vinculado
-				AND ( 
-					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
-					WHERE CNC.%NOTDEL% 
-					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
-					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
-					) = 1
-				*//Verifica se o cliente vinculado é o cliente informado nos parâmetros
-				AND ( 
-					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
-					WHERE CNC.%NOTDEL% 
-					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
-					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
-					AND CNC.CNC_CLIENT BETWEEN %EXP:cClientDe% AND %EXP:cClientAte% 
-					AND CNC.CNC_CLIENT BETWEEN %EXP:cLojaDe% AND %EXP:cLojaAte% 
-					) <> 0
-
-				GROUP BY Z03.Z03_CONTRA
+				SELECT @@VERSION
 		
 			EndSql
 
@@ -207,7 +158,7 @@ static function frmCtRec()
 	aAdd( aTexto, 'para geração das medições dos contratos de compras.' )
 
 	aAdd( aBotoes, { 15, .T., {|| procLogView(,'PRCCTREC') } } ) // Visualizar
-	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX004C' )  } } ) // Parâmetros
+	aAdd( aBotoes, { 05, .T., {|| pergunte( 'CNTAX003B ' )  } } ) // Parâmetros
 	aAdd( aBotoes, { 02, .T., {|| fechaBatch()             } } ) // Cancelar
 	aAdd( aBotoes, { 01, .T., {|| prcCtRec(),FechaBatch()  } } ) // Ok
 
@@ -218,18 +169,17 @@ return
 static function prcCtRec()
 
 	local cAlias     := ''
-	local cRecursDe  := ''
-	local cRecursAte := ''
+	local cCompent   := ''
 	local dDataDe    := CtoD('')
 	local dDataAte   := CtoD('')
 	local cIdCV8     := ''
+	local aListCtr   := {}
+	local nPos       := 0
 
-	if pergunte( 'CNTAX004C' )
+	if pergunte( 'CNTAX003B' )
 
 		cAlias     := getNextAlias()
-		cRecursDe  := MV_PAR01
-		cRecursAte := MV_PAR02
-		cCompent   := SubStr( MV_PAR03, 1, 2 ) + '/' + SubStr( MV_PAR03, 3, 4 )
+		cCompent   := SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 )
 		dDataDe    := cToD( '01/' + cCompent )
 		dDataAte   := LastDay( dDataDe )
 
@@ -249,40 +199,41 @@ static function prcCtRec()
 		
 				%NOPARSER%
 
-				SELECT CN9.CN9_NUMERO, SUM( Z03.Z03_QTDHRS ) Z03_QTDHRS FROM %TABLE:Z03% Z03
+					SELECT 
 
-				INNER JOIN %TABLE:Z00% Z00
-				ON  Z03.Z03_FILIAL = Z00.Z00_FILIAL
-				AND Z03.D_E_L_E_T_ = Z00.D_E_L_E_T_
-				AND Z03.Z03_RECURS = Z00.Z00_CODIGO
+					CNA.CNA_XPLHRE,CNA_XRTAPR, SZA.ZA_RECCTR, 
+					SZA.ZA_RECRVCT, SZA.ZA_RECPLAN, SZA.ZA_RECITEM 
 
-				INNER JOIN %TABLE:CN9% CN9
-				ON  Z00.Z00_FILIAL = CN9.CN9_FILIAL
-				AND Z00.D_E_L_E_T_ = CN9.D_E_L_E_T_
-				AND Z00.Z00_CONTRA = CN9.CN9_NUMERO
+					FROM %TABLE:CN9% CN9
 
-				INNER JOIN %TABLE:CN1% CN1
-				ON CN9.CN9_FILIAL = CN1.CN1_FILIAL
-				AND CN9.CN9_TPCTO = CN1.CN1_CODIGO
-				AND CN9.D_E_L_E_T_ = CN1.D_E_L_E_T_
+					INNER JOIN %TABLE:CNA% CNA
+					ON CN9.D_E_L_E_T_  = CNA.D_E_L_E_T_
+					AND CN9.CN9_FILIAL = CNA.CNA_FILIAL
+					AND CN9.CN9_NUMERO = CNA.CNA_CONTRA
+					AND CN9.CN9_REVISA = CNA.CNA_REVISA
 
-				WHERE Z03.%NOTDEL%
-				AND Z03.Z03_FILIAL = %XFILIAL:Z03%
-				AND Z03.Z03_DTINIC BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
-				AND Z03.Z03_DTFIM  BETWEEN %EXP:DtoS( dDataDe  )% AND %EXP:DtoS( dDataAte )%
-				AND CN9.CN9_SITUAC = '05'
-				AND Z03.Z03_RECURS BETWEEN %EXP:cRecursDe% AND %EXP:cRecursAte%
-				AND CN1.CN1_ESPCTR = '1'
+					INNER JOIN %TABLE:CNB% CNB
+					ON CNA.D_E_L_E_T_  = CNB.D_E_L_E_T_
+					AND CNA.CNA_FILIAL = CNB.CNB_FILIAL
+					AND CNA.CNA_CONTRA = CNB.CNB_CONTRA
+					AND CNA.CNA_REVISA = CNB.CNB_REVISA
+					AND CNA.CNA_NUMERO = CNB.CNB_NUMERO
 
-				*//Verifica se o contrato tem apenas um fornecedor vinculado
-				AND ( 
-					SELECT COUNT(*) FROM %TABLE:CNC% CNC 
-					WHERE CNC.%NOTDEL% 
-					AND CNC.CNC_FILIAL = %XFILIAL:CNC% 
-					AND CNC.CNC_NUMERO = CN9.CN9_NUMERO 
-					) = 1
+					INNER JOIN %TABLE:SZA% SZA
+					ON CNB.D_E_L_E_T_  = SZA.D_E_L_E_T_
+					AND CNB.CNB_FILIAL = SZA.ZA_FILIAL
+					AND CNB.CNB_CONTRA = SZA.ZA_RECCTR
+					AND CNB.CNB_REVISA = SZA.ZA_RECRVCT   
+					AND CNB.CNB_NUMERO = SZA.ZA_RECPLAN
+					AND CNB.CNB_ITEM   = SZA.ZA_RECITEM
 
-				GROUP BY CN9.CN9_NUMERO
+					WHERE CN9.%NOTDEL%
+					AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')%
+					AND CN9.CN9_SITUAC = '05'
+					AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')%
+					AND CNA.CNA_PROMED BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
+
+					ORDER BY SZA.ZA_FILIAL, SZA.ZA_RECCTR, SZA.ZA_RECRVCT, SZA.ZA_RECPLAN, SZA.ZA_RECITEM
 		
 			EndSql
 
@@ -297,15 +248,44 @@ static function prcCtRec()
 
 				While ( cAlias )->( !Eof() )
 
-					( cAlias )->(  msgRun( 'Contrato: ' + AllTrim( CN9_NUMERO ) +;
-						' - Competência: ' + allTrim( cCompent ), 'Processando Contratos de Recursos ...',;
-						{||incMedicao( CN9_NUMERO, Z03_QTDHRS, cCompent ) } ) )
+					( cAlias )->( nPos := aScan( aListCtr, { | item |  item['CONTRATO'] == ZA_RECCTR } ) )
+
+					if nPos == 0
+
+						aAdd( aListCtr, jsonObject():new() )
+
+						aTail( aListCtr )['CONTRATO']  := ( cAlias )->( ZA_RECCTR )
+						aTail( aListCtr )['PLANILHAS'] := {}
+						aTail( aListCtr )['COMPETENCIA'] := cCompent
+
+					end if
+
+					( cAlias )->( nPos := aScan( aTail( aListCtr )['PLANILHAS'], { | item |  item['NUMERO'] == ZA_RECPLAN } ) )
+
+					if nPos == 0
+
+						aAdd( aTail( aListCtr )['PLANILHAS'], jsonObject():new() )
+
+						aTail( aTail( aListCtr )['PLANILHAS'] )['NUMERO'] := ( cAlias )->( ZA_RECPLAN )
+						aTail( aTail( aListCtr )['PLANILHAS'] )['PLAN_EXCED'] := ( cAlias )->( CNA_XPLHRE )
+						aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] := {}
+
+						( cAlias )->( hrsCpItPln( ZA_RECCTR, ZA_RECRVCT, ZA_RECPLAN, dDataDe, CNA_XRTAPR,;
+							aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] ) )
+
+					end if
 
 					( cAlias )->( DbSkip() )
 
 				EndDo
 
 			end if
+
+			for nPos := 1 to len( aListCtr )
+
+				incMedicao( aListCtr[ nPos ] )
+
+			next nX
 
 			ProcLogAtu('FIM',,,,.T.)
 			procLogView(,,,@cIdCV8)
@@ -318,8 +298,63 @@ static function prcCtRec()
 
 return
 
-static function incMedicao( cContrato, nQtdHoras, cCompet )
+static function hrsCpItPln( cContrato, cRevisao, cPlanilha, dCompt, nMesesRetr, aItens )
 
+	local cAlias   := getNextAlias()
+	local nX       := 0
+	local dDataDe  := FirstDate( dCompt )
+	local dDataAte := LastDay( dCompt )
+
+	for nx := 1 to nMesesRetr
+
+		dDataDe -= 1
+
+		dDataDe  := FirstDate( dDataDe )
+		dDataAte := LastDay( dDataDe )
+
+	next nx
+
+	BeginSql alias cAlias
+		
+		%NOPARSER%
+
+		SELECT SZA.ZA_RECITEM,SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
+
+		INNER JOIN %TABLE:SZA% SZA
+		ON SZA.D_E_L_E_T_  = SZB.D_E_L_E_T_
+		AND SZA.ZA_FILIAL = SZB.ZB_FILIAL
+		AND SZA.ZA_CODREC = SZB.ZB_RECURS
+		AND SZA.ZA_CODIGO = SZB.ZB_TAREFA
+
+		WHERE SZB.%NOTDEL%
+		AND SZB.ZB_FILIAL = %XFILIAL:SZB%
+		AND SZB.ZB_DTINIC BETWEEN %EXP:dTos( dDataDe )% AND %EXP:dTos( dDataAte )%
+		AND SZA.ZA_RECCTR = %EXP:cContrato%
+		AND SZA.ZA_RECRVCT = %EXP:cRevisao%
+		AND SZA.ZA_RECPLAN = %EXP:cPlanilha%
+
+		GROUP BY SZA.ZA_RECITEM
+
+	EndSql
+
+	(cAlias)->( DbGoTop() )
+
+	while (cAlias)->( ! eof() )
+
+		aAdd( aItens, jsonObject():new() )
+
+		(cAlias)->( aTail( aItens )['ITEM'] := ZA_RECITEM )
+		(cAlias)->( aTail( aItens )['QUANTIDADE'] := ZB_QTDHRS )
+
+		(cAlias)->( DbSkip() )
+
+	end
+
+	(cAlias)->( DbCloseArea() )
+
+return
+
+static function incMedicao( jContrato ) // cContrato / nQtdHoras / cCompet
 
 	Local oModel    := Nil
 	Local aCompets  := {}
@@ -332,7 +367,7 @@ static function incMedicao( cContrato, nQtdHoras, cCompet )
 	DbSelectArea('CN9')
 	CN9->(DbSetOrder(1))
 
-	If ! CN9->( DbSeek( xFilial( "CN9" ) + cContrato ) )//Posicionar na CN9 para realizar a inclusão
+	If ! CN9->( DbSeek( xFilial( "CN9" ) + jContrato['CONTRATO'] ) )//Posicionar na CN9 para realizar a inclusão
 
 		ProcLogAtu( 'ERRO', 'Contrato inválido.', 'O contrato ' + cContrato + ' não é válido para a Filial ' + cFilAnt,,.T.)
 
@@ -340,7 +375,7 @@ static function incMedicao( cContrato, nQtdHoras, cCompet )
 
 		aCompets := CtrCompets()
 
-		if Empty( nCompet := aScan( aCompets, { | cItem | allTrim( cItem ) == allTrim( cCompet ) } ) )
+		if Empty( nCompet := aScan( aCompets, { | cItem | allTrim( cItem ) == allTrim( jContrato['COMPETENCIA'] ) } ) )
 
 			ProcLogAtu( 'ERRO', 'Competência inválida.',;
 				'A competência ' + cCompet + ' não é válida para o contrato ' + cContrato,,.T.)
@@ -355,7 +390,6 @@ static function incMedicao( cContrato, nQtdHoras, cCompet )
 
 				oModel:Activate()
 				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
-
 
 				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
 

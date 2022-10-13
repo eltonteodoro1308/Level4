@@ -1,7 +1,7 @@
 #Include "TOTVS.ch"
 #Include "FWMVCDEF.ch"
 
-Static lAdminApto := aScan( UsrRetGrp( __cUserID ), {|item| AllTrim( item ) == GetMv( 'MX_GRPADM' ) } ) != 0
+Static lAdminApto
 
 User Function CNTAX002()
 
@@ -9,13 +9,11 @@ User Function CNTAX002()
 
 	Private cUserRec := ''
 
-	if lAdminApto
+	lAdminApto := aScan( UsrRetGrp( __cUserID ), {|item| AllTrim( item ) == GetMv( 'MX_GRPADM' ) } ) != 0
 
-		if Pergunte( 'CNTAX002' )
+	if lAdminApto .And. ConPad1(, , , 'SZZ')
 
-			cUserRec := MV_PAR01
-
-		end if
+		cUserRec := SZZ->ZZ_CODIGO
 
 	else
 
@@ -25,7 +23,7 @@ User Function CNTAX002()
 
 	SZZ->( DbSetOrder( 1 ) )
 
-	if SZZ->( DbSeek( xFilial('SZZ') + cUserRec ) )
+	if lAdminApto .Or. SZZ->( DbSeek( xFilial('SZZ') + cUserRec ) )
 
 		oBrowse:Activate()
 
@@ -60,6 +58,7 @@ Static Function ModelDef()
 	Local oModel    := MPFormModel():New("CNTAM003",, { | oModel | TudoOk( oModel ) } )
 	Local oStru     := FwFormStruct(1, "SZB")
 
+	oStru:SetProperty( 'ZB_INTERVA', MODEL_FIELD_INIT, {||'0100'} )
 
 	oModel:AddFields("MASTER", NIL, oStru )
 
@@ -92,6 +91,7 @@ static function TudoOk( oModel )
 	Local dDtIni   := FwFldGet( 'ZB_DTINIC' )
 	Local cDtIni   := DtoS( dDtIni )
 	Local cHrIni   := FwFldGet( 'ZB_HRINIC' )
+	Local cInterv  := FwFldGet( 'ZB_INTERVA' )
 	Local dDtFim   := FwFldGet( 'ZB_DTFIM'  )
 	Local cDtFim   := DtoS( dDtFim )
 	Local cHrFim   := FwFldGet( 'ZB_HRFIM' )
@@ -99,6 +99,7 @@ static function TudoOk( oModel )
 	Local nCount   := 0
 	Local dPerIni  := FirstDate( GetMv( 'MX_APTOMES' ) )
 	Local dPerFim  := LastDate( dPerIni )
+	Local nQtdHrs  := 0
 
 	if ! cValToChar( oModel:nOperation ) $ '349'
 
@@ -148,7 +149,7 @@ static function TudoOk( oModel )
 		WHERE SZB.%NOTDEL%
 		AND SZB.ZB_FILIAL = %XFILIAL:SZB%
 		AND SZB.ZB_RECURS = %EXP:cRecurso%
-		AND SZB.ZB_CONTRA = %EXP:cTarefa%
+		AND SZB.ZB_TAREFA = %EXP:cTarefa%
 		AND
 			(
 				%EXP:cDtIni + cHrIni% BETWEEN SZB.ZB_DTINIC + SZB.ZB_HRINIC AND SZB.ZB_DTFIM + SZB.ZB_HRFIM OR
@@ -183,20 +184,32 @@ static function TudoOk( oModel )
 
 	end if
 
-	FwFldPut( 'ZB_QTDHRS', elapInt( dDtIni, cHrIni, dDtFim, cHrFim ),,,, .T. )
+	nQtdHrs := elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
+
+	FwFldPut( 'ZB_QTDHRS', nQtdHrs,,,, .T. )
+
+	if nQtdHrs < 0
+
+		Help(,, "CNTAX002",, 'Não é permitido um total de horas negativas.', 1, 0,,,,,, {'Verifique o tempo de intervalo.'})
+
+		Return .F.
+
+	end if
 
 return .T.
 
-static function elapInt( dDataIni, cHoraIni, dDataFim, cHoraFim )
+static function elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
 
 	Local nRet     := 0
-	Local nHoraIni := val( cHoraIni ) / 100
-	Local nHoraFim := val( cHoraFim ) / 100
+	Local nHoraIni := val( cHrIni ) / 100
+	Local nInterv  := val( cInterv  ) / 100
+	Local nHoraFim := val( cHrFim ) / 100
 	Local nHora    := 0
 
-	nHora := DataHora2Val( dDataIni, nHoraIni, dDataFim, nHoraFim, 'H' )
+	nHora := DataHora2Val( dDtIni, nHoraIni, dDtFim, nHoraFim, 'H' )
 
 	nRet := round( int( nHora ) + ( ( nHora - int( nHora ) ) / 0.6 ), 2 )
+	nRet -= round( int( nInterv ) + ( ( nInterv - int( nInterv ) ) / 0.6 ), 2 )
 
 return nRet
 
