@@ -397,6 +397,8 @@ static function incMedicao( jContrato ) // cContrato / nQtdHoras / cCompet
 				oModel:GetModel('CNEDETAIL'):GoLine(1)
 				oModel:SetValue( 'CNEDETAIL' , 'CNE_QUANT', nQtdHoras )
 
+				
+				
 				If (oModel:VldData()) /*Valida o modelo como um todo*/
 
 					oModel:CommitData()
