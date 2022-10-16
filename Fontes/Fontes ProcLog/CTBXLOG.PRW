@@ -30,61 +30,53 @@ Function CTBShowFLG(cArqTRB)
 Local aAreaTRB	:= GetArea()
 Local aCampos	:= {}
 Local aRotOri	:= aClone(aRotina)
+Local oBrowse  	:= FWmBrowse():New()
 
-DEFAULT cArqTRB	:= "LOGCTB"+cEmpAnt+".FLG"
+PRIVATE aRotina   := {}
 
-If Select("TRBFLAG") <= 0
-	If !File(cArqTRB)
-		MsgInfo(STR0001+cArqTRB+STR0002)//"Arquivo de log "#" nao encontrado ou vazio."
-		RestArea(aAreaTRB)
-		Return
-	Else
-		dbUseArea(.T.,,cArqTRB,"TRBFLAG",.T.,.F.)		
-		If Select("TRBFLAG") <= 0
-			MsgInfo(STR0003+cArqTRB+STR0004)//"Nao foi possivel abrir log "#"com flags remarcados."
-			RestArea(aAreaTRB)
-			Return
-		EndIf		
-	EndIf
-	//NAO FECHAR ALIAS DURANTE GRAVAÇÃO///// TRBFLAG->(DbCloseArea())
-Endif
+aRotina  := MenuDef()
 
-dbSelectArea("TRBFLAG")
+If TableInDic("QL5") //Tratamento para relises < 12.1.17
+	oBrowse:SetAlias("QL5")
+	oBrowse:SetDescription(STR0028)	//"Log de Limpeza de Flags de Contabilização	
+	oBrowse:Activate()
+Else
+	If Aviso(STR0063,CRLF+STR0064+CRLF+CRLF+STR0065,{STR0066,STR0067},2)==1 //"Atenção"###"Dicionário de dados desatualizado."###'A documentação para a criação da tabela "Log de Exclusão de Flag da LC (QL5)" está disponível no TDN.'###"Acessar link"###"Sair"				
+		ShellExecute( "Open", "http://tdn.totvs.com/pages/releaseview.action?pageId=372556085", "", "C:\", 1 )
+	EndIf		
+EndIf
 
-//P/ BROWSE	   //CAMPO		//PICTURE	//TITULO		//TAMANHO
-aadd(aCampos ,{"TIPOREG" 	,"9"				,STR0005	,01}) //"Tipo Reg."
-aadd(aCampos ,{"USUARIO" 	,"" 				,STR0006	,10}) //"Usuario"
-aadd(aCampos ,{"DATAEXC" 	,"99/99/99" 		,STR0007	,10}) //"Data Exc."
-aadd(aCampos ,{"HORAEXC" 	,""					,STR0008	,10}) //"Hora Exc."
-aadd(aCampos ,{"CV3_TABORI"	,""					,STR0009	,03}) //"Tab.Origem"
-aadd(aCampos ,{"CV3_RECORI" ,"99999999999999999",STR0010	,17}) //"Reg.Origem"
-aadd(aCampos ,{"CT2_FILIAL" ,""					,STR0011	,02}) //"Filial"
-aadd(aCampos ,{"CT2_DATA"	,"99/99/99"			,STR0012	,10}) //"Data Lcto."
-aadd(aCampos ,{"CT2_LOTE" 	,""					,STR0013	,06}) //"Lote"
-aadd(aCampos ,{"CT2_SBLOTE" ,""					,STR0014	,03}) //"Sub-Lote"
-aadd(aCampos ,{"CT2_DOC" 	,""					,STR0015	,06}) //"Documento"	
-aadd(aCampos ,{"CT2_LINHA"	,""					,STR0016	,03}) //"Linha"	
-aadd(aCampos ,{"CV3_LP" 	,""					,STR0017	,03}) //"Lanc.Pad."
-aadd(aCampos ,{"CV3_LPSEQ"  ,""					,STR0018	,03}) //"Seq.LP."
-aadd(aCampos ,{"CT2_VALOR"  ,"99,999,999,999.99",STR0019	,20}) //"Valor.Lancto."     
-aadd(aCampos ,{"CV3_VALOR"  ,"99,999,999,999.99",STR0020	,20}) //"Valor Rastro"
-aadd(aCampos ,{"CT2_HIST"	,""					,STR0021	,40}) //"Historico"	
-aadd(aCampos ,{"CT2_RECNO"	,"99999999999999999",STR0022	,17}) //"Reg.Lancto."
-aadd(aCampos ,{"CV3_RECNO"	,"99999999999999999",STR0023	,17}) //"Reg.Rastro"
+Return nil 
+//--------------------------------------------------
+/*/{Protheus.doc} MenuDef
+Utilizacao de menu Funcional.
 
-aRotina :=	{	{ STR0024	, "LogVisOri", 0, 1 },;	//"Ver Origem"
-				{ STR0025	, "LogVisCV3", 0, 2 },; //"Ver Rastro"
-				{ STR0026	, "LogVisCT2", 0, 3 },; //"Ver Lancto"
-				{ STR0027	, "LogVisLeg", 0, 4 } }	//"Imprimir Log"
-				
-//MsgInfo("Veja o arquivo: "+cArqTRB+" ! no diretorio: "+GetSrvProfString("Startpath",""), "Log Gerado.")
-//MaWndBrowse(nLin1,nCol1,nLin2,nCol2,cTitle									  ,uAlias	 ,aCampos,aRotina,cFun,cTopFun,cBotFun,lCentered,aResource,nModelo,aPesqui,cSeek,lDic,lSavOrd,lParPad,lPesq,bViewReg,oBrowse)
-MaWndBrowse(0	   ,0	 ,400	,600 ,STR0028+" - "+cArqTRB,"TRBFLAG",aCampos ,aRotina,    , 	  , 	  ,.T.		,		  ,  	  ,    	  ,	 	,.F. ,		 ,.F.  	,.F.   ,		,)//"Log de Limpeza de Flags de Contabilização"
+@author Paulo Carnelossi
+@since 07/03/2007
+@version P12.1.18
 
-aRotina := aClone(aRotOri)
-RestArea(aAreaTRB)
+@return array, opcoes de menu da rotina
+/*/
+//--------------------------------------------------
+Static Function MenuDef()
 
-Return
+//Local aRotina := {}
+
+aRotina := {}
+
+If ( FWIsInCallStack("CTBShowFLG") )
+
+	aAdd(aRotina,{STR0024 ,"LogVisOri", 0 , 1,}) 	// "Pesquisar"
+	aAdd(aRotina,{STR0025 ,"LogVisCV3", 0 , 2}) 	// "Visualizar"
+	aAdd(aRotina,{STR0026 ,"LogVisCT2", 0 , 3}) 	// "Incluir"
+	aAdd(aRotina,{STR0027 ,"LogVisLeg", 0 , 4})		//"Imprime Log"
+	aAdd(aRotina,{STR0042 ,"ProcLogDet",0,2})		//"Detalhes"
+
+Else
+	aAdd(aRotina,{STR0042 ,"ProcLogDet",0,2})		//"Detalhes"
+EndIf				
+
+Return(aRotina)
 
 /*
 ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
@@ -106,37 +98,34 @@ Local aAreaVis := GetArea()
 Local nRecOri
 Local cCadOri	:= cCadastro
 
-If Empty(TRBFLAG->CV3_TABORI) .or. Empty(TRBFLAG->CV3_RECORI)
+If !TableInDic("QL5") //Tratamento para relises < 12.1.17
+	Help(" ",1,"CTB120LOGFLAG",,STR0062,1,0,,,,,,{STR0028}) //"Localizada transferência com data posterior a data base do sistema."###"Confira a data da última transferência ocorrida para o ativo: "
+	Return 
+EndIf
+
+If Empty(QL5->QL5_TABORI) .or. Empty(QL5->QL5_RECORI)
 	Return
 EndIf
 
-nRecOri := int(val(TRBFLAG->CV3_RECORI))
+nRecOri := int(val(QL5->QL5_RECORI))
 
-dbSelectArea(TRBFLAG->CV3_TABORI)
+dbSelectArea(QL5->QL5_TABORI)
 dbGoTo(nRecOri)
-If (TRBFLAG->CV3_TABORI)->(Eof()) .or. (TRBFLAG->CV3_TABORI)->(Recno()) <> nRecOri
+If (QL5->QL5_TABORI)->(Eof()) .or. (QL5->QL5_TABORI)->(Recno()) <> nRecOri
 	RestArea(aAreaVis)
 	Return
 EndIf
 dbSetOrder(1)
 
 dbSelectArea("SX2")
-dbSeek(TRBFLAG->CV3_TABORI)
-#IFDEF ENGLISH
-	cCadastro := SX2->X2_NOMEENG
-	cCadastro := alltrim(cCadastro)+" - Record "+TRBFLAG->CV3_RECORI
-#ELSE
-	#IFDEF SPANISH
-		cCadastro := SX2->X2_NOMESPA
-		cCadastro := alltrim(cCadastro)+" - Registro "+TRBFLAG->CV3_RECORI
-	#ELSE
-		cCadastro := SX2->X2_NOME	
-		cCadastro := alltrim(cCadastro)+" - Registro "+TRBFLAG->CV3_RECORI
-	#ENDIF
-#ENDIF
+SX2->(dbSetOrder(1))
+If SX2->(dbSeek(QL5->QL5_TABORI))
+	cCadastro := X2Nome()
+	cCadastro := alltrim(cCadastro)+" - Record "+QL5->QL5_RECORI
+EndIf
 
-dbSelectArea(TRBFLAG->CV3_TABORI)
-AxVisual(Alias(),(TRBFLAG->CV3_TABORI)->(Recno()),2)
+dbSelectArea(QL5->QL5_TABORI)
+AxVisual(Alias(),(QL5->QL5_TABORI)->(Recno()),2)
 
 cCadastro := cCadOri
 RestArea(aAreaVis)
@@ -163,11 +152,16 @@ Local aAreaVis := GetArea()
 Local nRecOri
 Local cCadOri	:= cCadastro
 
-If Empty(TRBFLAG->CV3_RECNO) 
+If !TableInDic("QL5") //Tratamento para relises < 12.1.17
+	Help(" ",1,"CTB120LOGFLAG",,STR0062,1,0,,,,,,{STR0028}) //"Localizada transferência com data posterior a data base do sistema."###"Confira a data da última transferência ocorrida para o ativo: "
+	Return 
+EndIf
+
+If Empty(QL5->QL5_RCNCV3) 
 	Return
 EndIf
 
-nRecOri := int(val(TRBFLAG->CV3_RECNO))
+nRecOri := int(val(QL5->QL5_RCNCV3))
 
 dbSelectArea("CV3")
 dbGoTo(nRecOri)
@@ -178,19 +172,11 @@ EndIf
 dbSetOrder(1)
 
 dbSelectArea("SX2")
-dbSeek("CV3")
-#IFDEF ENGLISH
-	cCadastro := SX2->X2_NOMEENG
-	cCadastro := alltrim(cCadastro)+" - Record "+TRBFLAG->CV3_RECNO
-#ELSE
-	#IFDEF SPANISH
-		cCadastro := SX2->X2_NOMESPA
-		cCadastro := alltrim(cCadastro)+" - Registro "+TRBFLAG->CV3_RECNO
-	#ELSE
-		cCadastro := SX2->X2_NOME	
-		cCadastro := alltrim(cCadastro)+" - Registro "+TRBFLAG->CV3_RECNO
-	#ENDIF
-#ENDIF
+SX2->(dbSetOrder(1))
+If SX2->(dbSeek("CV3"))
+	cCadastro := X2Nome()
+	cCadastro := alltrim(cCadastro)+" - Record "+QL5->QL5_RCNCV3
+EndIf
 
 dbSelectArea("CV3")
 AxVisual("CV3",CV3->(Recno()),2)
@@ -219,7 +205,12 @@ Local aAreaVis := GetArea()
 Local nRecCT2
 Local cCadOri	:= cCadastro
 
-nRecCT2 := int(val(TRBFLAG->CT2_RECNO))
+If !TableInDic("QL5") //Tratamento para relises < 12.1.17
+	Help(" ",1,"CTB120LOGFLAG",,STR0062,1,0,,,,,,{STR0028}) //"Localizada transferência com data posterior a data base do sistema."###"Confira a data da última transferência ocorrida para o ativo: "
+	Return 
+EndIf
+
+nRecCT2 := int(val(QL5->QL5_RCNCT2))
 
 dbSelectArea("CT2")
 dbGoTo(nRecCT2)
@@ -230,19 +221,11 @@ EndIf
 dbSetOrder(1)
 
 dbSelectArea("SX2")
-dbSeek("CT2")
-#IFDEF ENGLISH
-	cCadastro := SX2->X2_NOMEENG
-	cCadastro := alltrim(cCadastro) + " - Record " + TRBFLAG->CT2_RECNO
-#ELSE
-	#IFDEF SPANISH
-		cCadastro := SX2->X2_NOMESPA
-		cCadastro := alltrim(cCadastro) + " - Registro " + TRBFLAG->CT2_RECNO
-	#ELSE
-		cCadastro := SX2->X2_NOME	
-		cCadastro := alltrim(cCadastro) + " - Registro " + TRBFLAG->CT2_RECNO
-	#ENDIF
-#ENDIF
+SX2->(dbSetOrder(1))
+If SX2->(dbSeek("CT2"))
+	cCadastro := X2Nome()
+	cCadastro := alltrim(cCadastro)+" - Record "+QL5->QL5_RCNCT2
+EndIf
 
 dbSelectArea("CT2")
 If CT2->(Deleted())
@@ -305,11 +288,19 @@ Return
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
-Function ProcLogIni( aButtons,cProcess,cSubProcess,cIdCV8)
-Local aAreaAnt := GetArea()
-Default cProcess := ProcName(1)
-Default cSubProcess  := ""
-Default aButtons     := {}
+
+Function ProcLogIni( aButtons,cProcess,cSubProcess,cIdCV8,cFilProc)
+Local aAreaAnt	:= GetArea()
+Local cFilOld	:= ''
+Default cProcess	:= ProcName(1)
+Default cSubProcess	:= ""
+Default aButtons	:= {}
+Default cFilProc	:= cFilAnt
+
+If cFilProc != cFilAnt
+	cFilOld := cFilAnt
+	cFilAnt := cFilProc
+EndIf
 
 If Empty(__BatchProc)
 	__BatchProc := cProcess
@@ -325,18 +316,21 @@ If !Empty(cSubProcess)
 	__SubProc := cSubProcess 
 EndIf
 
-If CV8->(FieldPos("CV8_IDMOV")) > 0 .And. !Empty(CV8->(IndexKey(5))) 
+If !Empty(CV8->(IndexKey(5))) 
 	__cIdCV8:= GetSXENum("CV8","CV8_IDMOV",,5)	
 	cIdCV8 	:= __cIdCV8
 	ConfirmSX8()
 EndIf
 
-
-
 aadd(aButtons, { 15,.T.,{|| ProcLogView()  } } )
+
+If !Empty(cFilOld)
+	cFilAnt := cFilOld
+EndIf
 
 RestArea(aAreaAnt)
 Return 
+
 
 
 /*/
@@ -368,7 +362,7 @@ Local cFilterIni:= ""
 Local cFilterFin:= ""   
 Local cChave	:= "" 
 
-Private aRotina := MenuDef()
+Private aRotina 	:= {}
 Default cProc 		:= __BatchProc  
 Default cSubProc 	:= ""
 Default cFilProc 	:= cFilAnt
@@ -376,6 +370,10 @@ Default cFilProc 	:= cFilAnt
 If Type("cCadastro") != "C"
 	cCadastro := ""
 EndIf
+
+__BatchProc := cProc
+
+aRotina := MenuDef()
 
 //Criado parametro para filtro
 dbSelectArea("CV8")
@@ -422,24 +420,50 @@ Return
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
-Function ProcLogDet()
-Local aAreaAnt  := GetArea()
-Local aRotina   := {}
+Function ProcLogDet(cAlias,nRecno,nOpc,oBrowse)
 
-dbSelectArea( "CV8" )
+	Default cAlias  := Alias()
+	Default nRecno  := Recno()
+	Default nOpc    := 2
+	Default oBrowse := NIL
 
-nRecno := CV8->( Recno() )
+	//Verifica a existencia da CV8 antes de visualizar o registro
+	If PrLogSeek(oBrowse)
+		AxVisual("CV8",CV8->(Recno()),2)
+	Else
+		Help(' ',1,'ARQVAZIO')
+	Endif	
 
-dbSetOrder(1)
-If DbSeek( xFilial( 'CV8' ) + ALLTRIM( __BatchProc ) )
-	aRotina := {{ STR0042,"AxVisual", Recno() , 2}}  //"Detalhes"
-ENDIF
+Return()
 
-CV8->( DBGOTO( nRecno ) )
+/*/{Protheus.doc} PrLogSeek()
+	Verifica se o registro existe na CV8, antes de executar a visualização
 
-RestArea(aAreaAnt)
-RETURN  aRotina
+	@type Static Function
+	@author Vitor Duca
+	@since 29/01/2021
+	@param oBrowse , Objeto, objeto do Browse que sera verificado
+	@version 1.0
+/*/
+Static Function PrLogSeek(oBrowse)
+	Local aArea  	As Array
+	Local aAreaCV8 	As Array
+	Local lRet		As Logical
 
+	Default oBrowse := NIL
+	
+	aArea  		:= GetArea() 
+	aAreaCV8 	:= CV8->(GetArea())
+	lRet		:= .T.
+
+	If oBrowse <> NIL .and. !Eval(oBrowse:bGotop)
+		lRet := .F.
+	Endif
+
+	RestArea(aAreaCV8)
+	RestArea(aArea)
+
+Return lRet
 
 /*/
 ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
@@ -455,15 +479,22 @@ RETURN  aRotina
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
-Function ProcLogAtu(cType,cMsg,cDetalhes,cBatchProc,lCabec)
+
+Function ProcLogAtu(cType,cMsg,cDetalhes,cBatchProc,lCabec,cFilProc)
 Local nx
 Local aAreaAnt		:= GetArea()
 Local cMsgSubProc	:= ""
+Local cFilOld		:= cFilAnt
 
 Default cDetalhes   := ""
 Default cMsg		:= ""
 Default cType		:= "INICIO"
 Default lCabec		:= Nil
+Default cFilProc	:= cFilAnt
+
+If cFilProc != cFilAnt
+	cFilAnt := cFilProc
+EndIf
 
 If  cBatchProc <> Nil
 	__BatchProc  := cBatchProc
@@ -501,7 +532,7 @@ If !Empty(__BatchProc)
 	cMsgSubProc	:= cMsg+STR0050+__BatchProc 								//" Executado por :"
 	cMsg		:= If(!Empty(__SubProc),STR0051+__SubProc+" - ","")+cMsg	//"Sub-Processo : "
 
-	GravaCV8(cType, __BatchProc, cMsg, cDetalhes, __SubProc, cMsgSubProc, lCabec, __cIdCV8)
+	GravaCV8(cType, __BatchProc, cMsg, cDetalhes, __SubProc, cMsgSubProc, lCabec, __cIdCV8, cFilProc)
 
 	If cType == "2" // Final do Processamento
 		__BatchProc := ""
@@ -510,41 +541,11 @@ If !Empty(__BatchProc)
 
 EndIf	
 
+cFilAnt := cFilOld
+
 RestArea(aAreaAnt)
 Return
 
-/*/
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
-±±³Programa  ³MenuDef   ³ Autor ³ Ana Paula N. Silva     ³ Data ³06/12/06 ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Descri‡…o ³ Utilizacao de menu Funcional                               ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Retorno   ³Array com opcoes da rotina.                                 ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Parametros³Parametros do array a Rotina:                               ³±±
-±±³          ³1. Nome a aparecer no cabecalho                             ³±±
-±±³          ³2. Nome da Rotina associada                                 ³±±
-±±³          ³3. Reservado                                                ³±±
-±±³          ³4. Tipo de Transa‡„o a ser efetuada:                        ³±±
-±±³          ³		1 - Pesquisa e Posiciona em um Banco de Dados     ³±±
-±±³          ³    2 - Simplesmente Mostra os Campos                       ³±±
-±±³          ³    3 - Inclui registros no Bancos de Dados                 ³±±
-±±³          ³    4 - Altera o registro corrente                          ³±±
-±±³          ³    5 - Remove o registro corrente do Banco de Dados        ³±±
-±±³          ³5. Nivel de acesso                                          ³±±
-±±³          ³6. Habilita Menu Funcional                                  ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³   DATA   ³ Programador   ³Manutencao efetuada                         ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³          ³               ³                                            ³±±
-±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
-/*/
-Static Function MenuDef()                  
-		Local aRotina := ProcLogDet()
-Return(aRotina)
 
 /*
 ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
@@ -689,7 +690,6 @@ nTipo := If(aReturn[4]==1,10,15)
 RptStatus({|lEnd| RunCtROut(lEnd,WnRel,cString,nOrdem,aTxt)},Titulo)
 
 Return
-
 /*/
 ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
@@ -757,3 +757,14 @@ Endif
 MS_FLUSH()
 
 Return
+//-------------------------------------------------------------------
+/*/{Protheus.doc} CtbChkPar()
+Verifica se o mv_par?? existe
+
+@author totvs
+@since 27/09/2018
+@version P12.1.17
+/*/
+//-------------------------------------------------------------------
+Static Function CtbChkPar(cMVParAux)
+Return (Type(cMVParAux)<>"U")
