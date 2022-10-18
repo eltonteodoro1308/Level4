@@ -6,8 +6,8 @@
 
 * Tarefa na amarração rec x contrato um campo de tarefa
 * Campo intervalo no apontamento com 1 hora default
-- Escopo fechado não pode gerar medição por apontamento.
-- tratar o excende da medição
+* Escopo fechado não pode gerar medição por apontamento.
+* tratar o excende da medição
 * Tratar cenário onde o contrato abrange dois fornecedores (casados)
 * Um recurso pode ter mais de um contrato visto que o valor hora pode ser diferente
 * Um cliente pode mais de um contrato com valor hora diferentes e também com valor fixo onde não recebe apontamento

@@ -410,17 +410,18 @@ static function incMedicao( jContrato )
 					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'NUMERO' ] } } )
 
 						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-						oModel:GetModel('CNEDETAIL'):GoLine(1)
 
-						for nY := 1 to Len( oModel:getModel('CNEDETAIL'):getOldData() )
+						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()//Len( oModel:getModel('CNEDETAIL'):getOldData() )
+
+							oModel:GetModel('CNEDETAIL'):GoLine( nY )
 
 							nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
 								{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
 
 							if nPos > 0
 
-								if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA'] < ;
-										oModel:getModel('CNEDETAIL'):GetValue( 'CNE_QUANT' )
+								if ( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA'] < ;
+										oModel:getModel('CNEDETAIL'):GetValue( 'CNE_QUANT' ) )
 
 									oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
 										jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA']  )
@@ -433,9 +434,7 @@ static function incMedicao( jContrato )
 
 							end if
 
-							oModel:GetModel('CNEDETAIL'):GoLine( nX )
-
-						next nX
+						next nY
 
 					end if
 
