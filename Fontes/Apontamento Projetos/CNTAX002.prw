@@ -55,10 +55,38 @@ Return FwMvcMenu( 'CNTAX002' )
 
 Static Function ModelDef()
 
-	Local oModel    := MPFormModel():New("CNTAM003",, { | oModel | TudoOk( oModel ) } )
-	Local oStru     := FwFormStruct(1, "SZB")
+	Local oModel     := MPFormModel():New("CNTAM003",, { | oModel | TudoOk( oModel ) } )
+	Local oStru      := FwFormStruct(1, "SZB")
+	Local cCodeBlock := ''
+	Local aAux       := {}
 
 	oStru:SetProperty( 'ZB_INTERVA', MODEL_FIELD_INIT, {||'0100'} )
+
+	aAux := aClone( FwStruTrigger( 'ZB_DTINIC' , 'ZB_DTFIM', 'FwFldGet("ZB_DTINIC")',,,,,, '01' ) )
+
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
+
+	cCodeBlock += 'a := FwFldGet( "ZB_DTINIC"  ),'
+	cCodeBlock += 'b := FwFldGet( "ZB_HRINIC"  ),'
+	cCodeBlock += 'c := FwFldGet( "ZB_INTERVA" ),'
+	cCodeBlock += 'd := FwFldGet( "ZB_DTFIM"   ),'
+	cCodeBlock += 'e := FwFldGet( "ZB_HRFIM"   ),'
+	cCodeBlock += 'u_elapInt( a, b, c, d, e ) '
+
+	aAux := aClone( FwStruTrigger( 'ZB_DTINIC' , 'ZB_QTDHRS', cCodeBlock, .F., '', 0, '', nil,  '02' ) )
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
+
+	aAux := aClone( FwStruTrigger( 'ZB_HRINIC' , 'ZB_QTDHRS', cCodeBlock, .F., '', 0, '', nil,  '01' ) )
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
+
+	aAux := aClone( FwStruTrigger( 'ZB_INTERVA', 'ZB_QTDHRS', cCodeBlock, .F., '', 0, '', nil,  '01' ) )
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
+
+	aAux := aClone( FwStruTrigger( 'ZB_DTFIM'  , 'ZB_QTDHRS', cCodeBlock, .F., '', 0, '', nil,  '01' ) )
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
+
+	aAux := aClone( FwStruTrigger( 'ZB_HRFIM'  , 'ZB_QTDHRS', cCodeBlock, .F., '', 0, '', nil,  '01' ) )
+	oStru:addTrigger( aAux[ 1 ], aAux[ 2 ], aAux[ 3 ], aAux[ 4 ] )
 
 	oModel:AddFields("MASTER", NIL, oStru )
 
@@ -91,7 +119,6 @@ static function TudoOk( oModel )
 	Local dDtIni   := FwFldGet( 'ZB_DTINIC' )
 	Local cDtIni   := DtoS( dDtIni )
 	Local cHrIni   := FwFldGet( 'ZB_HRINIC' )
-	Local cInterv  := FwFldGet( 'ZB_INTERVA' )
 	Local dDtFim   := FwFldGet( 'ZB_DTFIM'  )
 	Local cDtFim   := DtoS( dDtFim )
 	Local cHrFim   := FwFldGet( 'ZB_HRFIM' )
@@ -99,7 +126,6 @@ static function TudoOk( oModel )
 	Local nCount   := 0
 	Local dPerIni  := FirstDate( GetMv( 'MX_APTOMES' ) )
 	Local dPerFim  := LastDate( dPerIni )
-	Local nQtdHrs  := 0
 
 	if ! cValToChar( oModel:nOperation ) $ '349'
 
@@ -119,7 +145,7 @@ static function TudoOk( oModel )
 	if FirstDate( dDtIni ) != FirstDate( dDtFim )
 
 		Help(,, "CNTAX002",, 'A data de início e a data final do apontamento devem estar dentro do mesmo mês/ano.', 1, 0,,,,,,;
-			{'Informe um intervalo válido.'})
+			{'Verifique a hora inicial, final e o intervalo digitado.'})
 
 		Return .F.
 
@@ -128,7 +154,7 @@ static function TudoOk( oModel )
 	if cDtIni + cHrIni >= cDtFim + cHrFim
 
 		Help(,, "CNTAX002",, 'A Data/Hora início deve ser anterior a Data/Hora final do Apontamento.', 1, 0,,,,,,;
-			{'Informe um intervalo válido.'})
+			{'Verifique a hora inicial, final e o intervalo digitado.'})
 
 		Return .F.
 
@@ -178,19 +204,15 @@ static function TudoOk( oModel )
 
 	if nCount > 0
 
-		Help(,, "CNTAX002",, 'Já existe apontamento neste intervalo de data/hora.', 1, 0,,,,,, {'Informe um intervalo válido.'})
+		Help(,, "CNTAX002",, 'Já existe apontamento neste intervalo de data/hora.', 1, 0,,,,,, {'Verifique a hora inicial, final e o intervalo digitado.'})
 
 		Return .F.
 
 	end if
 
-	nQtdHrs := elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
+	if FwFldGet( 'ZB_QTDHRS' ) <= 0
 
-	FwFldPut( 'ZB_QTDHRS', nQtdHrs,,,, .T. )
-
-	if nQtdHrs < 0
-
-		Help(,, "CNTAX002",, 'Não é permitido um total de horas negativas.', 1, 0,,,,,, {'Verifique o tempo de intervalo.'})
+		Help(,, "CNTAX002",, 'Não é permitido um total de horas menores ou iguais a zero.', 1, 0,,,,,, {'Verifique a hora inicial, final e o intervalo digitado.'})
 
 		Return .F.
 
@@ -198,7 +220,7 @@ static function TudoOk( oModel )
 
 return .T.
 
-static function elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
+user function elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
 
 	Local nRet     := 0
 	Local nHoraIni := val( cHrIni ) / 100
@@ -206,10 +228,15 @@ static function elapInt( dDtIni, cHrIni, cInterv, dDtFim, cHrFim )
 	Local nHoraFim := val( cHrFim ) / 100
 	Local nHora    := 0
 
-	nHora := DataHora2Val( dDtIni, nHoraIni, dDtFim, nHoraFim, 'H' )
+	if !( Empty( dDtIni ) .Or. Empty( nHoraIni ) .Or.;
+			Empty( nInterv ) .Or. Empty( dDtFim ) .Or. Empty( nHoraFim ) )
 
-	nRet := round( int( nHora ) + ( ( nHora - int( nHora ) ) / 0.6 ), 2 )
-	nRet -= round( int( nInterv ) + ( ( nInterv - int( nInterv ) ) / 0.6 ), 2 )
+		nHora := DataHora2Val( dDtIni, nHoraIni, dDtFim, nHoraFim, 'H' )
+
+		nRet := round( int( nHora ) + ( ( nHora - int( nHora ) ) / 0.6 ), 2 )
+		nRet -= round( int( nInterv ) + ( ( nInterv - int( nInterv ) ) / 0.6 ), 2 )
+
+	end if
 
 return nRet
 

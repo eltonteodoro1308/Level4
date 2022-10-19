@@ -11,6 +11,26 @@
 * Tratar cenário onde o contrato abrange dois fornecedores (casados)
 * Um recurso pode ter mais de um contrato visto que o valor hora pode ser diferente
 * Um cliente pode mais de um contrato com valor hora diferentes e também com valor fixo onde não recebe apontamento
-- Marcar apontamento 
+* Marcar apontamento 
 
 - Compartilhamento tabelas
+
+
+
+
+	10/2022 - 03/2023 -> Periodo de alocação -> Terá Apontamentos
+	Nota Fiscal Emitida no mês seguinte a prestação de serviço dia 01
+	Pagto em 60 dias da emissão da nota fiscal todo dia 05
+	
+	11/2022 
+	
+	
+	12/2022 -> 05/2023 -> Cobrança
+	
+	
+1 - Data de titulo provisório conforme condição de pagamento informada na planilha
+2 - Data final do apontamento sempre igual a da de início
+3 - Planilha totalmente zerada (Verificar campos CXN_CRONOG, CXN_ZERO )
+4 - Melhorar log
+5 - Gatilhar total de horas no apontamento do recurso
+	
