@@ -1,7 +1,7 @@
 - Campo Standard pocket pay
 - Tratar que o endereço seja o campo A1_END onde logradouro e número seja separados por vírgula
 - Método GET com consulta de lista de títulos baixas em um intervalo de tempo
-- Implementar no json o envio do campo sllerid com o código do vendedor
+- Implementar no json o envio do campo sellerid com o código do vendedor
 - Verificar 
 
 * Tarefa na amarração rec x contrato um campo de tarefa
