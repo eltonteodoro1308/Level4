@@ -373,6 +373,7 @@ static function incMedicao( jContrato )
 	Local nPos       := 0
 	Local nX         := 0
 	Local nY         := 0
+	Local nSldTotal  := 0
 
 	DbSelectArea('CN9')
 	CN9->(DbSetOrder(1))
@@ -398,6 +399,8 @@ static function incMedicao( jContrato )
 
 			If oModel:CanActivate()
 
+				oModel:GetModel('CNRDETAIL1'):SetLPre({||.T.})
+				
 				oModel:Activate()
 				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
 				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
@@ -411,30 +414,43 @@ static function incMedicao( jContrato )
 
 						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
 
-						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()//Len( oModel:getModel('CNEDETAIL'):getOldData() )
+						if aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
+								{ | ITEM | nSldTotal += ITEM['QUANT_ESTIMADA'] * ITEM['VALOR_UNITARIO'],;
+								ITEM['QUANT_REALIZADA'] != 0  } ) == 0
 
-							oModel:GetModel('CNEDETAIL'):GoLine( nY )
+							oModel:GetModel('CNRDETAIL1'):GoLine(1)//<CNRDETAIL1> é o submodelo das multas da planilha(CXN)
+							oModel:SetValue("CNRDETAIL1","CNR_TIPO"     , '1')//1=Multa/2=Bonificação
+							oModel:SetValue("CNRDETAIL1","CNR_DESCRI"   , 'Contrato sem horas apuradas no período')
+							oModel:SetValue("CNRDETAIL1","CNR_VALOR"    , nSldTotal)
 
-							nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
-								{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
+						else
 
-							if nPos > 0
+							for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
 
-								if ( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA'] < ;
-										oModel:getModel('CNEDETAIL'):GetValue( 'CNE_QUANT' ) )
+								oModel:GetModel('CNEDETAIL'):GoLine( nY )
 
-									oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
-										jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA']  )
+								nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
+									{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
+
+								if nPos > 0
+
+									if ( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA'] < ;
+											oModel:getModel('CNEDETAIL'):GetValue( 'CNE_QUANT' ) )
+
+										oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
+											jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA']  )
+
+									end if
+
+								else
+
+									oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT', 0 )
 
 								end if
 
-							else
+							next nY
 
-								oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT', 0 )
-
-							end if
-
-						next nY
+						end if
 
 					end if
 

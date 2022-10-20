@@ -28,9 +28,9 @@
 	12/2022 -> 05/2023 -> Cobrança
 	
 	
-1 - Data de titulo provisório conforme condição de pagamento informada na planilha
-2 - Data final do apontamento sempre igual a da de início
+1 * Data de titulo provisório conforme condição de pagamento informada na planilha
+2 * Data final do apontamento sempre igual a da de início
 3 - Planilha totalmente zerada (Verificar campos CXN_CRONOG, CXN_ZERO )
 4 - Melhorar log
-5 - Gatilhar total de horas no apontamento do recurso
+5 * Gatilhar total de horas no apontamento do recurso
 	
