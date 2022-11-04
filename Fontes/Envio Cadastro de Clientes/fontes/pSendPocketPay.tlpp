@@ -172,6 +172,11 @@ static function makeJsonList()
 		aTail( aJsonList )['contactName'] := AllTrim( ( cAlias )->A1_CONTATO )
 		aTail( aJsonList )['email'] := AllTrim( ( cAlias )->A1_EMAIL )
 		aTail( aJsonList )['birthDate'] := ( cAlias )->( Year2Str( A1_DTNASC ) + '-' + Month2Str( A1_DTNASC ) + '-' + Day2Str( A1_DTNASC ) )
+		aTail( aJsonList )['standart'] := IIF( ( cAlias )->CN9_XSTAND == '1', 'Y', 'N' )
+		aTail( aJsonList )['partnerData'] := jsonObject():New()
+		aTail( aJsonList )['partnerData']['externalAccountId'] := allTrim( ( cAlias )->A1_COD )
+		aTail( aJsonList )['partnerData']['branch'] := allTrim( ( cAlias )->A1_LOJA )
+		aTail( aJsonList )['partnerData']['selerId'] := allTrim( ( cAlias )->A1_VEND )
 		aTail( aJsonList )['addressData'] := jsonObject():New()
 		aTail( aJsonList )['addressData']['address'] := AllTrim( ( cAlias )->A1_XEND )
 		aTail( aJsonList )['addressData']['addressComplement'] := AllTrim( ( cAlias )->A1_COMPLEM )
@@ -230,7 +235,10 @@ static function queryExec()
 			SELECT
 
 			 CN9.R_E_C_N_O_ CN9_REC
+			,CN9.CN9_XSTAND
 			,SA1.R_E_C_N_O_ SA1_REC
+			,SA1.A1_COD
+			,SA1.A1_LOJA
 			,SA1.A1_CGC
 			,SA1.A1_PFISICA
 			,SA1.A1_DDD
@@ -243,6 +251,7 @@ static function queryExec()
 			,SA1.A1_XEND
 			,SA1.A1_COMPLEM
 			,SA1.A1_XNR_END
+			,SA1.A1_VEND
 			,SA1.A1_MUN
 			,SA1.A1_BAIRRO
 			,SA1.A1_CEP
@@ -288,6 +297,7 @@ static function queryExec()
 			ON  CNA.CNA_FILIAL = CNB.CNB_FILIAL
 			AND CNA.CNA_CONTRA = CNB.CNB_CONTRA
 			AND CNA.CNA_REVISA = CNB.CNB_REVISA
+			AND CNA.CNA_NUMERO = CNB.CNB_NUMERO
 			AND CNA.D_E_L_E_T_ = CNB.D_E_L_E_T_
 
 			INNER JOIN %TABLE:SA1% SA1

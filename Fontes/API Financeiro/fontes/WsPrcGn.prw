@@ -10,11 +10,15 @@ WSRESTFUL WsPrcGn DESCRIPTION "Web Service de Integração com o Protheus." FORMAT
 	WSDATA Numero   AS STRING
 	WSDATA Parcela  AS STRING
 	WSDATA Tipo     AS STRING
+	WSDATA De       AS STRING
+	WSDATA Ate      AS STRING
 
 	WSMETHOD POST         DESCRIPTION 'Adiciona dados a serem processados por rotinas específicas do protheus.' WSSYNTAX '/' PATH '/'
 	WSMETHOD GET  ID      DESCRIPTION 'Consulta o status de um processamento enviado ao protheus.' WSSYNTAX '/' PATH '/'
-	WSMETHOD GET  FINA040 DESCRIPTION 'Consulta o status de um processamento enviado ao protheus.' WSSYNTAX '/FINA040/' PATH '/FINA040/'
-	WSMETHOD GET  FINA050 DESCRIPTION 'Consulta o status de um processamento enviado ao protheus.' WSSYNTAX '/FINA050/' PATH '/FINA050/'
+	WSMETHOD GET  FINA040 DESCRIPTION 'Consulta dados de um título a receber.' WSSYNTAX '/FINA040/' PATH '/FINA040/'
+	WSMETHOD GET  FINA050 DESCRIPTION 'Consulta dados de um título a pagar.' WSSYNTAX '/FINA050/' PATH '/FINA050/'
+	WSMETHOD GET  FINA070 DESCRIPTION 'Consulta de títulos a receber baixados em um período.' WSSYNTAX '/FINA070/' PATH '/FINA070/'
+	WSMETHOD GET  FINA080 DESCRIPTION 'Consulta de títulos a pagar baixados em um período.' WSSYNTAX '/FINA080/' PATH '/FINA080/'
 
 END WSRESTFUL
 
@@ -25,7 +29,7 @@ Adiciona dados a serem processados por rotinas específicas do protheus.
 
 **/
 
-WSMETHOD POST WSRECEIVE Rotina WSRESTFUL WsPrcGn
+WSMETHOD POST WSRECEIVE Rotina, Operacao WSRESTFUL WsPrcGn
 
 local cId   := FwUUIDV4(.F.)
 local cBody := ''
@@ -110,7 +114,7 @@ Consulta dados de um título a receber.
 
 **/
 
-WSMETHOD GET FINA040 WSRECEIVE Id WSRESTFUL WsPrcGn
+WSMETHOD GET FINA040 WSRECEIVE Prefixo, Numero, Parcela, Tipo WSRESTFUL WsPrcGn
 
 	Local cSeek     := xFilial( 'SE1' )
 	local jRequest  := jsonObject():New() 
@@ -180,7 +184,7 @@ Consulta dados de um título a pagar.
 
 **/
 
-WSMETHOD GET FINA050 WSRECEIVE Id WSRESTFUL WsPrcGn
+WSMETHOD GET FINA050 WSRECEIVE Prefixo, Numero, Parcela, Tipo WSRESTFUL WsPrcGn
 
 	Local cSeek     := xFilial( 'SE2' )
 	local jRequest  := jsonObject():New() 
@@ -243,6 +247,167 @@ WSMETHOD GET FINA050 WSRECEIVE Id WSRESTFUL WsPrcGn
 
 Return .T.
 
+/** 
+
+GET FINA070
+Consulta de títulos a receber baixados em um período.
+
+**/
+
+WSMETHOD GET FINA070 WSRECEIVE De, Ate WSRESTFUL WsPrcGn
+
+	Default ::De  := ''
+	Default ::Ate := ''
+
+return getContent( 'SE1', self ) 
+
+/** 
+
+GET FINA080
+Consulta de títulos a pagar baixados em um período.
+
+**/
+
+WSMETHOD GET FINA080 WSRECEIVE De, Ate WSRESTFUL WsPrcGn
+
+	Default ::De  := ''
+	Default ::Ate := ''
+
+return getContent( 'SE2', self ) 
+
+static function getContent( cTable, _self ) 
+
+	local jRequest  := jsonObject():New() 
+	local jResponse := jsonObject():New()
+	local cCampos   := ''
+	local cMsg      := ''
+	local aList     := {}
+
+	_self:SetContentType( 'application/json' )
+	
+	jRequest:fromJson( DecodeUtf8( _self:GetContent() ) )
+
+	validaCpos( jRequest, cTable, @cCampos, @cMsg )
+
+	if !Empty( cMsg )
+
+		SetRestFault( 400, FWhttpEncode( cMsg ) )
+
+		return .F.
+
+	end if
+
+	aList := runQuery( cCampos, cTable, _self:De, _self:Ate )
+
+	if !Empty( aList )
+
+		jResponse:set( aList )
+
+		_self:SetResponse( FWhttpEncode( jResponse:toJson() ) )
+
+	else
+
+		SetRestFault( 404, FWhttpEncode( 'Não foram localizados títulos baixados neste período.' ) )
+
+		return .F.
+
+	end if
+
+return .T.
+
+static function validaCpos( aCampos, cPrefix, cCampos, cMsg )
+
+	local aArea      := getArea()
+	local aAreaSx3   := SX3->( getArea() )
+	local aErrorCpos := {}
+	local nX         := 0
+	local nLength    := len( aCampos )
+	local cCampo     := ''
+
+	SX3->( DbSetOrder( 2 ) ) // X3_CAMPO
+
+	for nX := 1 to nLength
+
+		cCampo := upper( allTrim( aCampos[ nX ] ) )
+		cCampos += cCampo 
+
+		if nX < nLength
+
+			cCampos += ','
+		
+		end if
+
+		if SX3->( ! DbSeek( cCampo ) ) .Or. SubStr( cCampo, 1, 3 ) != SubStr( cPrefix, 2, 2 ) + '_';
+			.Or. GetSx3Cache( cCampo, 'X3_CONTEXT' ) == 'V'
+
+			aAdd( aErrorCpos, cCampo )
+
+		end if
+
+	next nX
+
+	SX3->( restArea( aAreaSx3 ) )
+	restArea( aArea )
+
+	nLength := len( aErrorCpos )
+
+	if !Empty( aErrorCpos )
+
+		cMsg := 'Os campos a seguir são inválidos, pois não existem fisicamente na tabela ' + cPrefix + CRLF + '[ '
+
+		for nX := 1 to nLength
+
+				cMsg += aErrorCpos[ nX ]
+
+			if nX < nLength
+
+				cMsg += ','
+
+			end if
+
+		next nX
+
+		cMsg += ' ]'
+
+	end if
+
+return
+
+static function runQuery( cCampos, cTable, cDe, cAte )
+
+	local cQuery  := ''
+	local cPrefix := SubStr( cTable, 2, 2 )
+	local cAlias  := ''
+	local aList   := {}
+	local nX      := 0
+	local jAux    := nil
+
+	cQuery += " SELECT " + cCampos 
+	cQuery += " FROM " + retSqlName( cTable ) 
+	cQuery += " WHERE " + cPrefix + "_BAIXA BETWEEN '" + cDe + "' AND '" +  cAte + "' "
+	cQuery += " AND D_E_L_E_T_ = ' ' AND " + cPrefix + "_FILIAL = '" + xFilial( 'S' + cPrefix ) + "' "
+
+	cAlias := MpSysOpenQuery( cQuery )
+
+	while ( cAlias )->( !Eof() )
+
+		jAux := jsonObject():new()
+
+		for nX := 1 to ( cAlias )->( FCount() )
+
+			( cAlias )->( jAux[ FieldName( nX ) ] := &( FieldName( nX ) ) )
+
+		next nX
+
+		aAdd( aList, jAux )
+
+		( cAlias )->( DbSkip() )
+
+	endDo
+
+	( cAlias )->( DbCloseArea() )
+
+return aList
 
 /*/{Protheus.doc} getPrcStat
 Busca na tabela SZ1 os dados de um processamento e popula a variável

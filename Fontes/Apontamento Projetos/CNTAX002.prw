@@ -255,4 +255,44 @@ user function vldFrmHr( cTime )
 
 return lRet
 
+user function getTask()
 
+	Local cAlias := getNextAlias()
+	Local cRet := ''
+
+	If Select( cAlias ) <> 0
+
+		( cAlias )->( DbCloseArea() )
+
+	EndIf
+
+	BeginSql alias cAlias
+	
+		SELECT SZA.ZA_CODIGO
+		FROM %TABLE:SZA% SZA
+		WHERE SZA.ZA_FILIAL = %XFILIAL:SZA%
+		AND SZA.%NOTDEL%
+		AND SZA.ZA_MSBLQL <> '1'
+		AND SZA.ZA_CODREC = %EXP:FWFLDGET( 'ZB_RECURS' )%
+	
+	EndSql
+
+	( cAlias )->( DbGoTop() )
+
+	If ( cAlias )->( !EOF() )
+
+		( cAlias )->( cRet := ZA_CODIGO )
+
+		( cAlias )->( DbSkip() )
+
+		if ( cAlias )->( !EOF() )
+
+			cRet := ''
+
+		end if
+
+	EndIf
+
+	( cAlias )->( DbCloseArea() )
+
+return cRet

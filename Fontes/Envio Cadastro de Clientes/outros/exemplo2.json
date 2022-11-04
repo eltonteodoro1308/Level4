@@ -1,0 +1,65 @@
+{
+    "addressData": {
+        "addressNumber": "825",
+        "address": "AVENIDA ALTO DA SERRA",
+        "neighborhood": "POUSO ALEGRE",
+        "postalCode": "09445110",
+        "state": "SP",
+        "addressComplement": "",
+        "city": "RIBEIRAO PIRES",
+        "country": "BRA"
+    },
+    "termsData": [{
+            "days": "1 ",
+            "interest": "1.49",
+            "startDate": "2022-10-01",
+            "endDate": "2023-10-01",
+            "maxAnticipationPercent": "1.11",
+            "type": "PROMOTIONAL",
+            "paymentDay": "3",
+            "fixedAmount": "2.5",
+            "unitPrice": "0",
+            "anticipationDays": "4",
+            "automaticAnticipation": "Y",
+            "terms": [{
+                    "days": "2.2",
+                    "initialInstallment": "1",
+                    "finalInstallment": "4",
+                    "rate": "2.2",
+                    "fixedAmount": "2.2",
+                    "cardType": "MASTERCARD"
+                }, {
+                    "days": "3.6",
+                    "initialInstallment": "5",
+                    "finalInstallment": "8",
+                    "rate": "3.6",
+                    "fixedAmount": "3.6",
+                    "cardType": "MASTERCARD"
+                }, {
+                    "days": "4.5",
+                    "initialInstallment": "9",
+                    "finalInstallment": "12",
+                    "rate": "4.5",
+                    "fixedAmount": "4.5",
+                    "cardType": "MASTERCARD"
+                }
+            ],
+            "oneTimePayment": "Y"
+        }
+    ],
+    "profileId": "L483Q5Jee01",
+    "generalRecord": "299665197",
+    "birthDate": "2017-08-10",
+    "partnerData": {
+        "externalAccountId": "C00001",
+        "selerId": "V00001",
+        "branch": "00"
+    },
+    "docNumber": "82434754000114",
+    "standart": "N",
+    "dbaName": "JÉSSICA E EMANUEL",
+    "companyName": "JÉSSICA E EMANUEL LIMPEZA LTDA",
+    "contactName": "MENDES",
+    "email": "administracao@jessicaeemanuell",
+    "cellPhNum": "1136980681"
+}
