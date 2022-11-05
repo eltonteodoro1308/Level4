@@ -17,7 +17,7 @@ user function CRMA980()
 
 	if cIDPonto == 'BUTTONBAR'
 
-		xRet := {}
+		return {}
 
 	elseif cIDPonto == 'MODELCOMMITNTTS' .And. GetMv( 'MX_A1_2_A2' )
 
