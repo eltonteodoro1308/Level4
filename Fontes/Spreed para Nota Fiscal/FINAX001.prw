@@ -2,7 +2,14 @@
 
 user function FINAX001()
 
-	//TODO Parâmetro para definir que empresa pode processar esta rotina
+	if ! getMv( 'MX_FIAX001' )
+
+		msgStop( 'Rotina não habilitada para esta Empresa/Filial: ' +;
+			cEmpAnt + '/' + cFilAnt + ' - ' + FwSM0Util():getSM0FullName( cEmpAnt, cFilAnt) , 'Atenção !!!' )
+
+		return
+
+	end if
 
 	if pergunte('FINAX001')
 
@@ -44,9 +51,13 @@ user function FINAX001()
 			private lContOnLin := MV_PAR03 == 1
 			private lContCstOn := MV_PAR04 == 1
 
-			makeQuery()
+			MsgRun( 'Processando busca de Títulos...', 'Aguarde !!!', {|| makeQuery() } )
 
-			makeNotas()
+			MsgRun( 'Gerando Faturamento...', 'Aguarde !!!', {|| makeNotas() } )
+
+			if !Empty( cErros )
+
+			end if
 
 		end if
 
@@ -92,7 +103,8 @@ static function makeQuery()
 
 	do while ( cAlias )->( !EOF() )
 
-		makeList()
+		( cAlias )->( MsgRun( 'Processando Cliente: ' + E2_FORNECE + '/' + E2_LOJA, 'Processando...',;
+			{|| makeList() } ) )
 
 		( cAlias )->( DbSkip() )
 
@@ -105,8 +117,7 @@ return
 static function makeList()
 
 	local nPos := ( cAlias )->( ;
-		aScan( aListFatur, {| item | item['CLIENTE'] == allTrim( E2_FORNECE ) .And.;
-		item['CLIENTE'] == allTrim( E2_LOJA ) } ) )
+		aScan( aListFatur, {| item | item['CLIENTE'] == E2_FORNECE .And. item['LOJA'] == E2_LOJA } ) )
 
 	if nPos == 0
 
@@ -119,7 +130,7 @@ static function makeList()
 
 	endIf
 
-	( cAlias )->( aTail( aListFatur )['VALOR'] := E2_DECRESC )
+	( cAlias )->( aTail( aListFatur )['VALOR'] += E2_DECRESC )
 	( cAlias )->( aAdd( aTail( aListFatur )['RECNOS'], R_E_C_N_O_ ) )
 
 return
@@ -133,7 +144,7 @@ static function makeNotas()
 
 		if makePedido( @cSc5Num, aListFatur[ nX ] )
 
-			makeDocSda( cSc5Num )
+			// makeDocSda( cSc5Num )
 
 		end if
 
@@ -149,24 +160,21 @@ static function makePedido( cSc5Num, jItem )
 	local cRecnos  := ''
 	local nX       := 0
 
-	cSc5Num := GetSxeNum("SC5", "C5_NUM")
-
-	aAdd( aSc5, { 'C5_NUM'    , cSc5Num          , nil } )
 	aAdd( aSc5, { 'C5_TIPO'   , 'N'              , nil } )
 	aAdd( aSc5, { 'C5_CLIENTE', jItem['CLIENTE'] , nil } )
 	aAdd( aSc5, { 'C5_LOJACLI', jItem['LOJA']    , nil } )
 	aAdd( aSc5, { 'C5_LOJAENT', jItem['LOJA']    , nil } )
 	aAdd( aSc5, { 'C5_CONDPAG', cCondPgto        , nil } )
 
-	aAdd( aTail( aSc6 ), { 'C6_ITEM'    , StrZero( 1, TamSx3('C6_ITEM')[1] ) } )
-	aAdd( aTail( aSc6 ), { 'C6_PRODUTO' , cProduto                           } )
-	aAdd( aTail( aSc6 ), { 'C6_QTDVEN'  , 1                                  } )
-	aAdd( aTail( aSc6 ), { 'C6_QTDLIB'  , 1                                  } )
-	aAdd( aTail( aSc6 ), { 'C6_PRCVEN'  , jItem['VALOR']                     } )
-	aAdd( aTail( aSc6 ), { 'C6_VALOR'   , jItem['VALOR']                     } )
-	aAdd( aTail( aSc6 ), { 'C6_TES'     , cTes                               } )
+	aAdd( aTail( aSc6 ), { 'C6_ITEM'    , StrZero( 1, TamSx3('C6_ITEM')[1] ), nil } )
+	aAdd( aTail( aSc6 ), { 'C6_PRODUTO' , cProduto                          , nil } )
+	aAdd( aTail( aSc6 ), { 'C6_QTDVEN'  , 1                                 , nil } )
+	aAdd( aTail( aSc6 ), { 'C6_QTDLIB'  , 1                                 , nil } )
+	aAdd( aTail( aSc6 ), { 'C6_PRCVEN'  , jItem['VALOR']                    , nil } )
+	aAdd( aTail( aSc6 ), { 'C6_VALOR'   , jItem['VALOR']                    , nil } )
+	aAdd( aTail( aSc6 ), { 'C6_TES'     , cTes                              , nil } )
 
-	MsExecAuto( { | a, b, c, d | MATA410( a, b, c, d ) }, aSc5, aSc6, 3, .F.)
+	MsgRun( 'Gerando Pedido de Vendas : ' + E2_FORNECE + '/' + E2_LOJA, 'Aguarde...', {|| MsExecAuto( { | a, b, c, d | MATA410( a, b, c, d ) }, aSc5, aSc6, 3, .F.) } )
 
 	if lMsErroAuto
 
@@ -178,15 +186,13 @@ static function makePedido( cSc5Num, jItem )
 
 		cSc5Num := ''
 
-		RollBackSxe()
-
 	else
 
-		ConfirmSxe()
+		cSc5Num := SC5->C5_NUM
 
 		for nX:= 1 to len( jItem['RECNOS'] )
 
-			cRecnos += cValTochar( jItem['RECNOS'] )
+			cRecnos += cValTochar( jItem['RECNOS'][nX] )
 
 			if nX < len( jItem['RECNOS'] )
 
@@ -196,7 +202,7 @@ static function makePedido( cSc5Num, jItem )
 
 		next nX
 
-		if 0 > TCSQLExec( "UPDATE " + RetSqlName( 'SE2' ) + " SET E2_XPEDCOB = ' " + cSc5Num + "' WHERE R_E_C_N_O_ IN(" + cRecnos + ")")
+		if 0 > TCSQLExec( "UPDATE " + RetSqlName( 'SE2' ) + " SET E2_XPEDCOB = '" + cSc5Num + "' WHERE R_E_C_N_O_ IN(" + cRecnos + ")")
 
 			ConOut( TCSQLError() )
 
