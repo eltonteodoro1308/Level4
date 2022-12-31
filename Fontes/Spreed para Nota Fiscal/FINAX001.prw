@@ -53,9 +53,34 @@ user function FINAX001()
 
 			MsgRun( 'Processando busca de Títulos...', 'Aguarde !!!', {|| makeQuery() } )
 
+			if empty( aListFatur )
+
+				msgInfo( 'Não foram localizados dados a serem processsados.', 'Atenção !!!' )
+
+				return
+
+			end if
+
 			MsgRun( 'Gerando Faturamento...', 'Aguarde !!!', {|| makeNotas() } )
 
+			lMsHelpAuto    := .F.
+			lAutoErrNoFile := .F.
+
 			if !Empty( cErros )
+
+				autoGrLog( 'Ocorreram erros na geração do Faturamento' )
+				autoGrLog( CRLF + PADR( '', 30, '-' ) + CRLF )
+				autoGrLog( cErros )
+				mostraErro()
+
+			end if
+
+			if !Empty( cNotas )
+
+				autoGrLog( 'A seguir a lista de Pedidos/Notas Fiscais que foram geradas.' )
+				autoGrLog( CRLF + PADR( '', 30, '-' ) + CRLF )
+				autoGrLog( cNotas )
+				mostraErro()
 
 			end if
 
@@ -79,14 +104,15 @@ static function makeQuery()
 
 		FROM %TABLE:SE2% SE2
 
-		INNER JOIN %TABLE:SA1% SA1
-		ON SA1.D_E_L_E_T_ = SE2.D_E_L_E_T_
-		AND SA1.A1_COD = SE2.E2_FORNECE
-		AND SA1.A1_LOJA = SE2.E2_LOJA
+		INNER JOIN %TABLE:SA2% SA2
+		ON SA2.D_E_L_E_T_ = SE2.D_E_L_E_T_
+		AND SA2.A2_COD = SE2.E2_FORNECE
+		AND SA2.A2_LOJA = SE2.E2_LOJA
 
 		WHERE SE2.E2_FILIAL = %XFILIAL:SE2%
 		AND SE2.%NOTDEL%
-        AND SE2.E2_XPEDCOB = %EXP:SPACE(TAMSX3('E2_XPEDCOB')[1])%
+		AND SE2.E2_DECRESC > 0
+		AND SE2.E2_XPEDCOB = %EXP:SPACE(TAMSX3('E2_XPEDCOB')[1])%
 		AND SE2.E2_PREFIXO BETWEEN %EXP:cPrefDe% AND %EXP:cPrefAte%
 		AND SE2.E2_NUM BETWEEN %EXP:cNumDe% AND %EXP:cNumAte%
 		AND SE2.E2_PARCELA BETWEEN %EXP:cParcDe% AND %EXP:cParcAte%
@@ -94,10 +120,10 @@ static function makeQuery()
 		AND SE2.E2_EMISSAO BETWEEN %EXP:dTos(dEmissDe)% AND %EXP:dTos(dEmissAte)%
 		AND SE2.E2_FORNECE BETWEEN %EXP:cFornecDe% AND %EXP:cFornecAte%
 		AND SE2.E2_LOJA BETWEEN %EXP:cLojaDe% AND %EXP:cLojaAte%
-		AND SA1.A1_FILIAL = %XFILIAL:SA1%
-		AND SA1.A1_MSBLQL <> '1'
+		AND SA2.A2_FILIAL = %XFILIAL:SA2%
+		AND SA2.A2_MSBLQL <> '1'
 
-		ORDER BY SE2.E2_FORNECE, SE2.E2_LOJA
+		ORDER BY SE2.E2_FORNECE, SE2.E2_LOJA		
 
 	EndSql
 
@@ -144,7 +170,8 @@ static function makeNotas()
 
 		if makePedido( @cSc5Num, aListFatur[ nX ] )
 
-			// makeDocSda( cSc5Num )
+			MsgRun( 'Gerando Nota Fiscal : ' + aListFatur[nX]['CLIENTE'] + '/' + aListFatur[nX]['LOJA'],;
+				'Aguarde...', {|| makeDocSda( cSc5Num ) } )
 
 		end if
 
@@ -174,7 +201,7 @@ static function makePedido( cSc5Num, jItem )
 	aAdd( aTail( aSc6 ), { 'C6_VALOR'   , jItem['VALOR']                    , nil } )
 	aAdd( aTail( aSc6 ), { 'C6_TES'     , cTes                              , nil } )
 
-	MsgRun( 'Gerando Pedido de Vendas : ' + E2_FORNECE + '/' + E2_LOJA, 'Aguarde...', {|| MsExecAuto( { | a, b, c, d | MATA410( a, b, c, d ) }, aSc5, aSc6, 3, .F.) } )
+	MsgRun( 'Gerando Pedido de Vendas : ' + jItem['CLIENTE'] + '/' + jItem['LOJA'], 'Aguarde...', {|| MsExecAuto( { | a, b, c, d | MATA410( a, b, c, d ) }, aSc5, aSc6, 3, .F.) } )
 
 	if lMsErroAuto
 
@@ -204,7 +231,8 @@ static function makePedido( cSc5Num, jItem )
 
 		if 0 > TCSQLExec( "UPDATE " + RetSqlName( 'SE2' ) + " SET E2_XPEDCOB = '" + cSc5Num + "' WHERE R_E_C_N_O_ IN(" + cRecnos + ")")
 
-			ConOut( TCSQLError() )
+			cErros += TCSQLError()
+			cErros += CRLF + PADR( '', 30, '-' ) + CRLF
 
 		end if
 
@@ -213,6 +241,8 @@ static function makePedido( cSc5Num, jItem )
 return lRet
 
 static function makeDocSda( cSc5Num )
+
+	local aPvlDocS := {}
 
 	DbSelectArea( 'SC5' )
 	SC5->( DbSetOrder( 1 ) )

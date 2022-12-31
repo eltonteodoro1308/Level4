@@ -69,7 +69,10 @@
 		},
 		{
 			"label": "u_FINAX001"
+		},
+		{
+			"label": "U_LIMPA_BASE"
 		}
 	],
-	"lastProgramExecuted": "sigamdi"
+	"lastProgramExecuted": "U_LIMPA_BASE"
 }
