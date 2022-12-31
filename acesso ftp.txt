@@ -1,0 +1,16 @@
+Dados de acesso ao SFTP/FTP
+Aplicação
+
+Produção
+URL: sftp://level4140254.protheus.cloudtotvs.com.br:1801
+Porta: 1801
+Usuário: ftp_CFPSX2_production
+Senha: XvEh4n4i
+
+_____________________
+
+Desenvolvimento
+URL: sftp://level4140255.protheus.cloudtotvs.com.br:1850
+Porta: 1850
+Usuário: ftp_CFPSX2_development
+Senha: idX0PX2
