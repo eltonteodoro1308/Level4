@@ -1,0 +1,17 @@
+- Criar Tabela ZY com limite de horas úteis no mês/Ano
+- Criar campo de bloqueio na tabela SZZ (ZZ_MSBLQL)
+- Excluir campo CNA_XRTAPR
+- Criar campos ZA_INICIO e ZA_FINAL
+- Criar o campo CN9_XCDPPD
+- Criar campo CNB_XHREXT
+- Excluir campos ZB_NOMERC, ZB_DESCTRF, ZB_DTINIC, ZB_DTFIM
+- Criar campo ZB_DATA
+- Criar tabela SZC -> Lote de Apontamento
+- Excluir parâmetro MX_GRPADM
+- Ajustar filtro da consulta SZA
+- Ajustar a rotina do menu de apontamento para o programa CNTAX102 e subir a tabela SZZ
+- Ajustar indices das tabelas SZC e SZB
+- Criar pergunta CNTAX002
+- Excluir parâmetro MX_APTOMES
+- Criar Parâmetro MX_TOLDIAS
+- Ajustar pergunta CNTAX003B

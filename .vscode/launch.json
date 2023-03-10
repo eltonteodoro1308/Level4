@@ -14,65 +14,20 @@
 	],
 	"lastPrograms": [
 		{
-			"label": "u_tstPrcGn"
+			"label": "U_calcula"
 		},
 		{
-			"label": "sigacfg"
-		},
-		{
-			"label": "u_tstsprcgn"
-		},
-		{
-			"label": "u_tstpSendQuery"
-		},
-		{
-			"label": "u_tstx3obgt"
-		},
-		{
-			"label": "U_tstpSendPocketPay"
-		},
-		{
-			"label": "sigamdi"
-		},
-		{
-			"label": "u_CNTAX002"
-		},
-		{
-			"label": "u_elapInt"
-		},
-		{
-			"label": "u_tstInt"
+			"label": "SIGAMDI"
 		},
 		{
 			"label": "SIGAESP"
 		},
 		{
-			"label": "U_ProcLog"
+			"label": "SIGACFG"
 		},
 		{
-			"label": "APSDU"
-		},
-		{
-			"label": "SIGACTF"
-		},
-		{
-			"label": "SIGAGCT"
-		},
-		{
-			"label": "U__CFGX013"
-		},
-		{
-			"label": "u_F50PERGUNT"
-		},
-		{
-			"label": "u_crma980"
-		},
-		{
-			"label": "u_FINAX001"
-		},
-		{
-			"label": "U_LIMPA_BASE"
+			"label": "U_CNTAX002"
 		}
 	],
-	"lastProgramExecuted": "U_LIMPA_BASE"
+	"lastProgramExecuted": "SIGAMDI"
 }

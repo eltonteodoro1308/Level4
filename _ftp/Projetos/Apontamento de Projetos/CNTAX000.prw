@@ -23,21 +23,7 @@ Return oBrowse
 
 Static Function MenuDef()
 
-	local nX      := 0
-	local aMenu   := FwMvcMenu( 'CNTAX000' )
-	local aRotina := {}
-
-	for nX := 1 to len( aMenu )
-
-		if ! cValTochar( aMenu[ nX, 4 ] ) $ '59' 
-
-			aAdd( aRotina, aMenu[ nX ] )
-
-		end if
-
-	next nX
-
-Return aRotina
+Return FwMvcMenu( 'CNTAX000' )
 
 
 Static Function ModelDef()

@@ -8,20 +8,24 @@ User Function CNTAX003()
 	local cTitulo   := 'Processamento dos Apontamentos'
 	local cMsg      := ''
 	local cSair     := 'Sair'
-	local cToldias  := 'Tolerância de dias de Apontamento'
+	local cPerApto  := 'Período de Apontamento'
 	local cPrcCtRec := 'Processar Recursos'
 	local cPrcCtCli := 'Processar Clientes'
+	local uMesApto  := nil
 
 	aAdd( aBotoes, cSair )
-	aAdd( aBotoes, cToldias )
+	aAdd( aBotoes, cPerApto )
 	aAdd( aBotoes, cPrcCtRec )
 	aAdd( aBotoes, cPrcCtCli )
 
 	while .T.
 
-		cMsg := 'Empresa: ' + AllTrim( cFilAnt )
-		cMsg += ' - ' + AllTrim( FWFilName( cEmpAnt, cFilAnt ) ) + CRLF
-		cMsg += 'Dias de Tolerância: ' + cValtoChar( GetMv( 'MX_TOLDIAS' ) )
+		uMesApto := GetMv( 'MX_APTOMES' )
+		uMesApto := Month2Str( uMesApto ) + '/' + Year2Str( uMesApto )
+
+		cMsg := 'Período em aberto para apontamentos: ' + uMesApto + '.' + CRLF
+		cMsg += 'Empresa: ' + AllTrim( cFilAnt )
+		cMsg += ' - ' + AllTrim( FWFilName( cEmpAnt, cFilAnt ) )
 
 		nRet := Aviso( cTitulo, cMsg, aBotoes, 3 )
 
@@ -29,11 +33,21 @@ User Function CNTAX003()
 
 			exit
 
-		elseif aBotoes[ nRet ] == cToldias
+		elseif aBotoes[ nRet ] == cPerApto
 
 			if pergunte('CNTAX003A')
 
-				PutMv( 'MX_TOLDIAS', MV_PAR01 )
+				uMesApto := cToD( '01/' + SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 ) )
+
+				if ! empty( uMesApto )
+
+					PutMv( 'MX_APTOMES', uMesApto )
+
+				else
+
+					ApMsgStop( 'Período inválido', 'Atenção !!!' )
+
+				end if
 
 			end if
 
@@ -99,21 +113,8 @@ static function prcCt( nTipoProc )
 	Local bConsProc  := nil
 
 	Private cIdCV8     := ''
-	Private nLimHrsMes := 0
 
 	if pergunte( 'CNTAX003B' )
-
-		if empty( FWGetSX5( 'ZY', MV_PAR01 ) )
-
-			apMsgInfo( 'Não foi definida o total de horas úteis para esta competência, na tabela genérica "ZY".', 'Atenção !!!' )
-
-			return
-
-		else
-
-			nLimHrsMes := VAL(FWGetSX5( 'ZY', MV_PAR01 )[1][4])
-
-		end if
 
 		cAlias     := getNextAlias()
 		cCompent   := SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 )
@@ -192,35 +193,29 @@ static function prcCtRec( cAlias, dDataDe, dDataAte )
 		
 		%NOPARSER%
 
-       SELECT
+		SELECT
 
-        CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
-        CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
-        CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, CNB.CNB_TE CNE_TES,
-        ZB_QTDHRS = (
+		CN9.CN9_NUMERO, CN9.CN9_REVISA,
+		CNA.CNA_NUMERO, CNA.CNA_XPLHRE, CNA.CNA_XRTAPR, 
+		CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_TE CNE_TES,
+		ZB_DTDHRS = (
 
-             SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
-             
-             INNER JOIN %TABLE:SZA% SZAX
-             ON SZAX.D_E_L_E_T_    = SZB.D_E_L_E_T_
-             AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
-             AND SZAX.ZA_CODREC = SZB.ZB_RECURS
-             AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
-             
-             INNER JOIN %TABLE:SZC% SZC
-             ON SZB.D_E_L_E_T_ = SZC.D_E_L_E_T_ 
-             AND SZB.ZB_TAREFA = SZC.ZC_TAREFA
-             
-             WHERE SZB.%NOTDEL%
-             AND SZB.ZB_FILIAL = %XFILIAL:SZB%
-             AND SZB.ZB_DATA BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-             AND SZAX.ZA_RECCTR  = CN9.CN9_NUMERO
-             AND SZAX.ZA_RECRVCT = CN9.CN9_REVISA
-             AND SZAX.ZA_RECPLAN = CNA.CNA_NUMERO
-             AND SZAX.ZA_RECITEM = CNB.CNB_ITEM
-             AND SZC.ZC_STATUS = '2'
-
-          )
+			SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
+			INNER JOIN %TABLE:SZA% SZAX
+			ON SZAX.D_E_L_E_T_  = SZB.D_E_L_E_T_
+			AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
+			AND SZAX.ZA_CODREC = SZB.ZB_RECURS
+			AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
+			WHERE SZB.%NOTDEL%
+			AND SZB.ZB_FILIAL = %XFILIAL:SZB%
+			AND SZB.ZB_DTINIC BETWEEN 
+			CONVERT( CHAR(8), DATEADD( M, -CNA.CNA_XRTAPR, CAST( %EXP:dTos( dDataDe )% AS DATE )  ), 112) AND 
+			CONVERT( CHAR(8), DATEADD( D, -1, DATEADD(M, 1, DATEADD( M, -CNA.CNA_XRTAPR, CAST( %EXP:dTos( dDataDe )% AS DATE ) ) ) ), 112 )
+			AND SZAX.ZA_RECCTR = CN9.CN9_NUMERO
+			AND SZAX.ZA_RECRVCT = CN9.CN9_REVISA
+			AND SZAX.ZA_RECPLAN = CNA.CNA_NUMERO
+			AND SZAX.ZA_RECITEM = CNB.CNB_ITEM
+		)
 
 		FROM %TABLE:CN9% CN9
 
@@ -249,9 +244,6 @@ static function prcCtRec( cAlias, dDataDe, dDataAte )
 		AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')%
 		AND CN9.CN9_SITUAC = '05'
 		AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')%
-		AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
-		AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
-		AND CNB.CNB_TE <> %EXP:Space( TamSx3( 'CNB_TE' )[1] )%
 		AND CNA.CNA_PROMED BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
 
 		ORDER BY SZA.ZA_FILIAL, SZA.ZA_RECCTR, SZA.ZA_RECRVCT, SZA.ZA_RECPLAN, SZA.ZA_RECITEM
@@ -269,35 +261,31 @@ static function prcCtCli( cAlias, dDataDe, dDataAte )
 		
 		%NOPARSER%
 
-        SELECT
+		SELECT
 
-        CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
-        CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
-        CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, CNB.CNB_TS CNE_TES,
-        ZB_QTDHRS = (
+		CN9.CN9_NUMERO, CN9.CN9_REVISA,
+		CNA.CNA_NUMERO, CNA.CNA_XPLHRE, CNA.CNA_XRTAPR, 
+		CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_TS  CNE_TES,
+		ZB_DTDHRS = (
 
-             SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
-             
-             INNER JOIN %TABLE:SZA% SZAX
-             ON SZAX.D_E_L_E_T_    = SZB.D_E_L_E_T_
-             AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
-             AND SZAX.ZA_CODREC = SZB.ZB_RECURS
-             AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
-             
-             INNER JOIN %TABLE:SZC% SZC
-             ON SZB.D_E_L_E_T_ = SZC.D_E_L_E_T_ 
-             AND SZB.ZB_TAREFA = SZC.ZC_TAREFA
-             
-             WHERE SZB.%NOTDEL%
-             AND SZB.ZB_FILIAL = %XFILIAL:SZB%
-             AND SZB.ZB_DATA BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-             AND SZAX.ZA_CLICTR  = CN9.CN9_NUMERO
-             AND SZAX.ZA_CLIRVCT = CN9.CN9_REVISA
-             AND SZAX.ZA_CLIPLAN = CNA.CNA_NUMERO
-             AND SZAX.ZA_CLIITEM = CNB.CNB_ITEM
-             AND SZC.ZC_STATUS = '2'
+			SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
 
-          )
+			INNER JOIN %TABLE:SZA% SZAX
+			ON SZAX.D_E_L_E_T_  = SZB.D_E_L_E_T_
+			AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
+			AND SZAX.ZA_CODREC = SZB.ZB_RECURS
+			AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
+
+			WHERE SZB.%NOTDEL%
+			AND SZB.ZB_FILIAL = %XFILIAL:SZB%
+			AND SZB.ZB_DTINIC BETWEEN 
+			CONVERT( CHAR(8), DATEADD( M, -CNA.CNA_XRTAPR, CAST( %EXP:dTos( dDataDe )% AS DATE )  ), 112) AND 
+			CONVERT( CHAR(8), DATEADD( D, -1, DATEADD(M, 1, DATEADD( M, -CNA.CNA_XRTAPR, CAST( %EXP:dTos( dDataDe )% AS DATE ) ) ) ), 112 )
+			AND SZAX.ZA_CLICTR = CN9.CN9_NUMERO
+			AND SZAX.ZA_CLIRVCT = CN9.CN9_REVISA
+			AND SZAX.ZA_CLIPLAN = CNA.CNA_NUMERO
+			AND SZAX.ZA_CLIITEM = CNB.CNB_ITEM
+		)
 
 		FROM %TABLE:CN9% CN9
 
@@ -326,9 +314,6 @@ static function prcCtCli( cAlias, dDataDe, dDataAte )
 		AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTVD')%
 		AND CN9.CN9_SITUAC = '05'
 		AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLVD')%
-		AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
-		AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
-		AND CNB.CNB_TS <> %EXP:Space( TamSx3( 'CNB_TS' )[1] )%
 		AND CNA.CNA_PROMED BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
 
 		ORDER BY SZA.ZA_FILIAL, SZA.ZA_CLICTR, SZA.ZA_CLIRVCT, SZA.ZA_CLIPLAN, SZA.ZA_CLIITEM
@@ -339,9 +324,7 @@ return
 
 static function mntListCtr( aListCtr, cAlias, cCompent )
 
-	local nPos      := 0
-	local nHrPlanej := ( cAlias )->( CNB_QUANT )
-	local nHrTrabal := ( cAlias )->( ZB_QTDHRS )
+	local nPos := 0
 
 	( cAlias )->( nPos := aScan( aListCtr, { | item |  item['CONTRATO'] == CN9_NUMERO } ) )
 
@@ -352,8 +335,6 @@ static function mntListCtr( aListCtr, cAlias, cCompent )
 		aTail( aListCtr )['CONTRATO']  := ( cAlias )->( CN9_NUMERO )
 		aTail( aListCtr )['PLANILHAS'] := {}
 		aTail( aListCtr )['COMPETENCIA'] := cCompent
-		aTail( aListCtr )['COND_PAG_MED'] := ( cAlias )->( CN9_XCDPMD )
-
 
 	end if
 
@@ -373,54 +354,10 @@ static function mntListCtr( aListCtr, cAlias, cCompent )
 
 	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['ITEM']  := ( cAlias )->( CNB_ITEM )
 	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['PRODUTO']  := ( cAlias )->( CNB_PRODUT )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['QUANT_ESTIMADA']  := ( cAlias )->( CNB_QUANT )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['QUANT_REALIZADA']  := ( cAlias )->( ZB_DTDHRS )
 	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['VALOR_UNITARIO'] := ( cAlias )->( CNB_VLUNIT )
-	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['VALOR_HREXTRA'] := ( cAlias )->( if( CNB_XHREXT > 0, CNB_XHREXT, CNB_VLUNIT ) )
 	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['TES'] := ( cAlias )->( CNE_TES )
-
-	if nHrPlanej >= nLimHrsMes
-
-		if nHrPlanej >= nHrTrabal
-
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrTrabal
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
-
-		else
-
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := nHrTrabal - nHrPlanej
-
-		end if
-
-	elseif nHrPlanej < nLimHrsMes
-
-		if nHrPlanej >= nHrTrabal
-
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrTrabal
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
-
-		else
-
-			if nHrTrabal <= nLimHrsMes
-
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nHrTrabal - nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
-
-			else
-
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nLimHrsMes - nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := nHrTrabal - nLimHrsMes
-
-
-			end if
-
-		end if
-
-	end if
 
 return
 
@@ -436,7 +373,7 @@ static function incMedicao( jContrato )
 	Local nPos       := 0
 	Local nX         := 0
 	Local nY         := 0
-	// Local nSldTotal  := 0
+	Local nSldTotal  := 0
 
 	DbSelectArea('CN9')
 	CN9->(DbSetOrder(1))
@@ -462,13 +399,14 @@ static function incMedicao( jContrato )
 
 			If oModel:CanActivate()
 
+				oModel:GetModel('CNRDETAIL1'):SetLPre({||.T.})
+				
 				oModel:Activate()
 				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
 				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
-				oModel:SetValue("CNDMASTER","CND_CONDPG"    ,  jContrato['COND_PAG_MED'] )
 
 				/*
-				Tratando planilhas planejAdas
+				Tratando planilhas planejdas
 				*/
 				for nX := 1 to Len( jContrato['PLANILHAS'] )
 
@@ -476,92 +414,51 @@ static function incMedicao( jContrato )
 
 						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
 
-						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
+						if aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
+								{ | ITEM | nSldTotal += ITEM['QUANT_ESTIMADA'] * ITEM['VALOR_UNITARIO'],;
+								ITEM['QUANT_REALIZADA'] != 0  } ) == 0
 
-							oModel:GetModel('CNEDETAIL'):GoLine( nY )
+							oModel:GetModel('CNRDETAIL1'):GoLine(1)//<CNRDETAIL1> é o submodelo das multas da planilha(CXN)
+							oModel:SetValue("CNRDETAIL1","CNR_TIPO"     , '1')//1=Multa/2=Bonificação
+							oModel:SetValue("CNRDETAIL1","CNR_DESCRI"   , 'Contrato sem horas apuradas no período')
+							oModel:SetValue("CNRDETAIL1","CNR_VALOR"    , nSldTotal)
 
-							nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
-								{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
+						else
 
-							if nPos > 0
+							for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
 
-								oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
-									jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['HR_MED_PLANEJADA']  )
+								oModel:GetModel('CNEDETAIL'):GoLine( nY )
 
-							end if
+								nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
+									{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
 
-						next nY
+								if nPos > 0
+
+									if ( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA'] < ;
+											oModel:getModel('CNEDETAIL'):GetValue( 'CNE_QUANT' ) )
+
+										oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
+											jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['QUANT_REALIZADA']  )
+
+									end if
+
+								else
+
+									oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT', 0 )
+
+								end if
+
+							next nY
+
+						end if
 
 					end if
 
 				next nX
 
-				/* Planilha Excedente */				
-				for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-					for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
-
-						/* Planilha excedente com valor normal */
-						if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][nY]["HR_MED_EXCED_VLR_NORMAL"] > 0 .And.;
-								oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-							if nY != 1
-
-								oModel:GetModel('CNEDETAIL'):GoLine(;
-									oModel:getModel('CNEDETAIL'):AddLine() )
-
-							end if
-
-							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( nY ), CNE->( Len( CNE_ITEM ) ), '0' ) )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_NORMAL' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_UNITARIO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-
-						end if
-
-						/* Planilha excedente com valor extra */
-						if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][nY]["HR_MED_EXCED_VLR_EXTRA"] > 0 .And.;
-								oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-							if nY != 1
-
-								oModel:GetModel('CNEDETAIL'):GoLine(;
-									oModel:getModel('CNEDETAIL'):AddLine() )
-
-							end if
-
-							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( nY ), CNE->( Len( CNE_ITEM ) ), '0' ) )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_EXTRA' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_HREXTRA' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-						end if
-
-					next nY
-
-				next nX
-
-				
-				// for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-				// 	for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
-
-
-
-				// 	next nY
-
-				// next nX
-
 				/*
 				Tratando planilhas de horas excedentes
-				
+				*/
 				for nX := 1 to Len( jContrato['PLANILHAS'] )
 
 					for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
@@ -597,7 +494,6 @@ static function incMedicao( jContrato )
 					next nY
 
 				next nX
-				*/
 
 				If (oModel:VldData()) /*Valida o modelo como um todo*/
 
