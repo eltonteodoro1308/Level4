@@ -4,6 +4,9 @@ Pós desenvolvimento:
 	Melhorar a query
 	manutenção horas úteis do mês pela apuração
 	Tratar mês sem apontamento
+	MarkBrowse mercar todos
+	Query só trazer lotes aprovados para gerar medição
+	CN9 -> CNA -> CNB -> SZA -> SZC
 
 */
 /*

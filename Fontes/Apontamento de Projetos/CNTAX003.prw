@@ -91,12 +91,8 @@ static function prcCt( nTipoProc )
 
 	local cAlias     := ''
 	local cCompent   := ''
-	local dDataDe    := CtoD('')
-	local dDataAte   := CtoD('')
 	local aListCtr   := {}
 	local nX         := 0
-	local cFuncName  := ''
-	Local bConsProc  := nil
 
 	Private cIdCV8     := ''
 	Private nLimHrsMes := 0
@@ -117,10 +113,8 @@ static function prcCt( nTipoProc )
 
 		cAlias     := getNextAlias()
 		cCompent   := SubStr( MV_PAR01, 1, 2 ) + '/' + SubStr( MV_PAR01, 3, 4 )
-		dDataDe    := cToD( '01/' + cCompent )
-		dDataAte   := LastDay( dDataDe )
 
-		if Empty( dDataDe )
+		if Empty( cToD( '01/' + cCompent ) )
 
 			ApMsgStop( 'Período informado inválido.', 'Atenção' )
 
@@ -132,23 +126,8 @@ static function prcCt( nTipoProc )
 
 			EndIf
 
-			if nTipoProc == 1
-
-				cFuncName := 'prcCtRec'
-
-			elseif nTipoProc == 2
-
-				cFuncName := 'prcCtCli'
-
-			else
-
-				return
-
-			end if
-
-			bConsProc := &( '{||' + cFuncName + '( cAlias, dDataDe, dDataAte ) }' )
-
-			MsgRun ( 'Processando Consulta ao Banco de Dados.', 'Aguarde ...', bConsProc )
+			MsgRun ( 'Processando Consulta ao Banco de Dados.', 'Aguarde ...',;
+				{|| prcQuery( cAlias, strTran( cCompent, '/', '' ), cValTochar( nTipoProc ) ) } )
 
 			if ( cAlias )->( Eof() )
 
@@ -183,156 +162,95 @@ static function prcCt( nTipoProc )
 
 return
 
-static function prcCtRec( cAlias, dDataDe, dDataAte )
+static function prcQuery( cAlias, cCompetenc, cEspCtr )
 
 	procLogIni(,,,@cIdCV8)
 	ProcLogAtu("INICIO",,,,.T.)
 
 	BeginSql alias cAlias
-		
+
 		%NOPARSER%
 
-       SELECT
+		SELECT
 
-        CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
-        CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
-        CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, CNB.CNB_TE CNE_TES,
-        ZB_QTDHRS = (
-
-             SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
-             
-             INNER JOIN %TABLE:SZA% SZAX
-             ON SZAX.D_E_L_E_T_    = SZB.D_E_L_E_T_
-             AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
-             AND SZAX.ZA_CODREC = SZB.ZB_RECURS
-             AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
-             
-             INNER JOIN %TABLE:SZC% SZC
-             ON SZB.D_E_L_E_T_ = SZC.D_E_L_E_T_ 
-             AND SZB.ZB_TAREFA = SZC.ZC_TAREFA
-             
-             WHERE SZB.%NOTDEL%
-             AND SZB.ZB_FILIAL = %XFILIAL:SZB%
-             AND SZB.ZB_DATA BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-             AND SZAX.ZA_RECCTR  = CN9.CN9_NUMERO
-             AND SZAX.ZA_RECRVCT = CN9.CN9_REVISA
-             AND SZAX.ZA_RECPLAN = CNA.CNA_NUMERO
-             AND SZAX.ZA_RECITEM = CNB.CNB_ITEM
-             AND SZC.ZC_STATUS = '2'
-
-          )
-
-		FROM %TABLE:CN9% CN9
-
-		INNER JOIN %TABLE:CNA% CNA
-		ON CN9.D_E_L_E_T_  = CNA.D_E_L_E_T_
-		AND CN9.CN9_FILIAL = CNA.CNA_FILIAL
-		AND CN9.CN9_NUMERO = CNA.CNA_CONTRA
-		AND CN9.CN9_REVISA = CNA.CNA_REVISA
-
-		INNER JOIN %TABLE:CNB% CNB
-		ON CNA.D_E_L_E_T_  = CNB.D_E_L_E_T_
-		AND CNA.CNA_FILIAL = CNB.CNB_FILIAL
-		AND CNA.CNA_CONTRA = CNB.CNB_CONTRA
-		AND CNA.CNA_REVISA = CNB.CNB_REVISA
-		AND CNA.CNA_NUMERO = CNB.CNB_NUMERO
-
-		INNER JOIN %TABLE:SZA% SZA
-		ON CNB.D_E_L_E_T_  = SZA.D_E_L_E_T_
-		AND CNB.CNB_FILIAL = SZA.ZA_FILIAL
-		AND CNB.CNB_CONTRA = SZA.ZA_RECCTR
-		AND CNB.CNB_REVISA = SZA.ZA_RECRVCT   
-		AND CNB.CNB_NUMERO = SZA.ZA_RECPLAN
-		AND CNB.CNB_ITEM   = SZA.ZA_RECITEM
-
-		WHERE CN9.%NOTDEL%
-		AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')%
-		AND CN9.CN9_SITUAC = '05'
-		AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')%
-		AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
-		AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
-		AND CNB.CNB_TE <> %EXP:Space( TamSx3( 'CNB_TE' )[1] )%
-		AND CNA.CNA_PROMED BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-
-		ORDER BY SZA.ZA_FILIAL, SZA.ZA_RECCTR, SZA.ZA_RECRVCT, SZA.ZA_RECPLAN, SZA.ZA_RECITEM
+    	CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
+    	CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
+    	CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, 
+	
+    	CASE CN9_ESPCTR
+	
+    		WHEN '1' THEN CNB.CNB_TE 
+    		WHEN '2' THEN CNB.CNB_TS
+    		ELSE ''
+	
+    	END CNE_TES,
+	
+    	SZC.ZC_TOTHRS 
+	
+    	FROM %TABLE:SZC% SZC
+	
+    	INNER JOIN %TABLE:SZA% SZA
+    	ON  SZA.D_E_L_E_T_ = SZC.D_E_L_E_T_
+    	AND SZA.ZA_FILIAL  = SZC.ZC_FILIAL
+    	AND SZA.ZA_CODIGO  = SZC.ZC_TAREFA
+	
+    	INNER JOIN %TABLE:CN9% CN9
+    	ON  SZA.D_E_L_E_T_ = SZC.D_E_L_E_T_
+    	AND SZA.ZA_FILIAL  = CN9.CN9_FILIAL
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECCTR  = CN9.CN9_NUMERO OR
+    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLICTR  = CN9.CN9_NUMERO
+    		)
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECRVCT  = CN9.CN9_REVISA OR
+    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIRVCT  = CN9.CN9_REVISA
+    		)
+	
+    	INNER JOIN %TABLE:CNA% CNA
+    	ON  CN9.D_E_L_E_T_  = CNA.D_E_L_E_T_
+    	AND CN9.CN9_FILIAL  = CNA.CNA_FILIAL
+    	AND CN9.CN9_NUMERO  = CNA.CNA_CONTRA
+    	AND CN9.CN9_REVISA  = CNA.CNA_REVISA
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECPLAN  = CNA.CNA_NUMERO OR
+    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIPLAN  = CNA.CNA_NUMERO
+    		)
+	
+    	INNER JOIN %TABLE:CNB% CNB
+    	ON  CNA.D_E_L_E_T_  = CNB.D_E_L_E_T_
+    	AND CNA.CNA_FILIAL  = CNB.CNB_FILIAL
+    	AND CNA.CNA_CONTRA  = CNB.CNB_CONTRA
+    	AND CNA.CNA_REVISA  = CNB.CNB_REVISA
+    	AND CNA.CNA_NUMERO  = CNB.CNB_NUMERO
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECITEM  = CNB.CNB_ITEM OR
+    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIITEM  = CNB.CNB_ITEM
+    		)
 		
-	EndSql
+    	WHERE SZC.%NOTDEL%
+    	AND SZC.ZC_FILIAL = %XFILIAL:SZC%
+    	AND SZC.ZC_COMPETE = %EXP:cCompetenc%
+    	AND SZC.ZC_STATUS = '2'
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')% OR
+    		CN9.CN9_ESPCTR  = '2' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTVD')%
+    		)
+    	AND CN9.CN9_SITUAC = '05'
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')% OR
+    		CN9.CN9_ESPCTR  = '2' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLVD')%
+    		)
+    	AND CN9.CN9_ESPCTR = %EXP:cEspCtr%
+    	AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
+    	AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
+    	AND ( 
+    		CN9.CN9_ESPCTR  = '1' AND CNB.CNB_TE <> %EXP:Space( TamSx3( 'CNB_TE' )[1] )% OR
+    		CN9.CN9_ESPCTR  = '2' AND CNB.CNB_TS <> %EXP:Space( TamSx3( 'CNB_TS' )[1] )%
+    		)
+    	AND SUBSTRING( CNA.CNA_PROMED, 5, 2 ) + LEFT( CNA.CNA_PROMED, 4 ) = %EXP:cCompetenc%
 
-return
+		ORDER BY CN9.CN9_FILIAL, CN9.CN9_NUMERO, CN9.CN9_REVISA, CNA.CNA_NUMERO, CNB.CNB_ITEM
 
-static function prcCtCli( cAlias, dDataDe, dDataAte )
-
-	procLogIni(,,,@cIdCV8)
-	ProcLogAtu("INICIO",,,,.T.)
-
-	BeginSql alias cAlias
-		
-		%NOPARSER%
-
-        SELECT
-
-        CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
-        CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
-        CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, CNB.CNB_TS CNE_TES,
-        ZB_QTDHRS = (
-
-             SELECT SUM(SZB.ZB_QTDHRS) ZB_QTDHRS FROM %TABLE:SZB% SZB
-             
-             INNER JOIN %TABLE:SZA% SZAX
-             ON SZAX.D_E_L_E_T_    = SZB.D_E_L_E_T_
-             AND SZAX.ZA_FILIAL = SZB.ZB_FILIAL
-             AND SZAX.ZA_CODREC = SZB.ZB_RECURS
-             AND SZAX.ZA_CODIGO = SZB.ZB_TAREFA
-             
-             INNER JOIN %TABLE:SZC% SZC
-             ON SZB.D_E_L_E_T_ = SZC.D_E_L_E_T_ 
-             AND SZB.ZB_TAREFA = SZC.ZC_TAREFA
-             
-             WHERE SZB.%NOTDEL%
-             AND SZB.ZB_FILIAL = %XFILIAL:SZB%
-             AND SZB.ZB_DATA BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-             AND SZAX.ZA_CLICTR  = CN9.CN9_NUMERO
-             AND SZAX.ZA_CLIRVCT = CN9.CN9_REVISA
-             AND SZAX.ZA_CLIPLAN = CNA.CNA_NUMERO
-             AND SZAX.ZA_CLIITEM = CNB.CNB_ITEM
-             AND SZC.ZC_STATUS = '2'
-
-          )
-
-		FROM %TABLE:CN9% CN9
-
-		INNER JOIN %TABLE:CNA% CNA
-		ON CN9.D_E_L_E_T_  = CNA.D_E_L_E_T_
-		AND CN9.CN9_FILIAL = CNA.CNA_FILIAL
-		AND CN9.CN9_NUMERO = CNA.CNA_CONTRA
-		AND CN9.CN9_REVISA = CNA.CNA_REVISA
-
-		INNER JOIN %TABLE:CNB% CNB
-		ON CNA.D_E_L_E_T_  = CNB.D_E_L_E_T_
-		AND CNA.CNA_FILIAL = CNB.CNB_FILIAL
-		AND CNA.CNA_CONTRA = CNB.CNB_CONTRA
-		AND CNA.CNA_REVISA = CNB.CNB_REVISA
-		AND CNA.CNA_NUMERO = CNB.CNB_NUMERO
-
-		INNER JOIN %TABLE:SZA% SZA
-		ON CNB.D_E_L_E_T_  = SZA.D_E_L_E_T_
-		AND CNB.CNB_FILIAL = SZA.ZA_FILIAL
-		AND CNB.CNB_CONTRA = SZA.ZA_CLICTR
-		AND CNB.CNB_REVISA = SZA.ZA_CLIRVCT   
-		AND CNB.CNB_NUMERO = SZA.ZA_CLIPLAN
-		AND CNB.CNB_ITEM   = SZA.ZA_CLIITEM
-
-		WHERE CN9.%NOTDEL%
-		AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTVD')%
-		AND CN9.CN9_SITUAC = '05'
-		AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLVD')%
-		AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
-		AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
-		AND CNB.CNB_TS <> %EXP:Space( TamSx3( 'CNB_TS' )[1] )%
-		AND CNA.CNA_PROMED BETWEEN %EXP:dTos(dDataDe)% AND %EXP:dTos(dDataAte)%
-
-		ORDER BY SZA.ZA_FILIAL, SZA.ZA_CLICTR, SZA.ZA_CLIRVCT, SZA.ZA_CLIPLAN, SZA.ZA_CLIITEM
-		
 	EndSql
 
 return
@@ -341,7 +259,7 @@ static function mntListCtr( aListCtr, cAlias, cCompent )
 
 	local nPos      := 0
 	local nHrPlanej := ( cAlias )->( CNB_QUANT )
-	local nHrTrabal := ( cAlias )->( ZB_QTDHRS )
+	local nHrTrabal := ( cAlias )->( ZC_TOTHRS )
 
 	( cAlias )->( nPos := aScan( aListCtr, { | item |  item['CONTRATO'] == CN9_NUMERO } ) )
 
@@ -547,57 +465,6 @@ static function incMedicao( jContrato )
 					next nY
 
 				next nX
-
-				
-				// for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-				// 	for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
-
-
-
-				// 	next nY
-
-				// next nX
-
-				/*
-				Tratando planilhas de horas excedentes
-				
-				for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-					for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
-
-						if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ]['QUANT_REALIZADA'] >;
-								jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ]['QUANT_ESTIMADA'] .And.;
-								oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-							if nY != 1
-
-								oModel:GetModel('CNEDETAIL'):GoLine(;
-									oModel:getModel('CNEDETAIL'):AddLine() )
-
-							end if
-
-							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM', PadL( cValToChar( nY ), CNE->( Len( CNE_ITEM ) ), '0' ) )
-
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'QUANT_REALIZADA' ] -;
-								jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ]['QUANT_ESTIMADA'] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_UNITARIO' ] )
-
-							if ! Empty( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-								oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-							END IF
-
-						end if
-
-					next nY
-
-				next nX
-				*/
 
 				If (oModel:VldData()) /*Valida o modelo como um todo*/
 
