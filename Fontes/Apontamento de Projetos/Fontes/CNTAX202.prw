@@ -1,6 +1,6 @@
 #include 'totvs.ch'
 
-// Acesso a teal de apontamento para aprovaÃ§Ã£o
+// Acesso a teal de apontamento para aprovação
 
 user function CNTAX202()
 
