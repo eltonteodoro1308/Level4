@@ -195,16 +195,16 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
     	AND SZA.ZA_CODIGO  = SZC.ZC_TAREFA
 	
     	INNER JOIN %TABLE:CN9% CN9
-    	ON  SZA.D_E_L_E_T_ = SZC.D_E_L_E_T_
+    	ON  SZA.D_E_L_E_T_ = CN9.D_E_L_E_T_
     	AND SZA.ZA_FILIAL  = CN9.CN9_FILIAL
     	AND ( 
     		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECCTR  = CN9.CN9_NUMERO OR
     		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLICTR  = CN9.CN9_NUMERO
     		)
-    	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECRVCT  = CN9.CN9_REVISA OR
-    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIRVCT  = CN9.CN9_REVISA
-    		)
+    	*//AND ( 
+    	*//	CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECRVCT  = CN9.CN9_REVISA OR
+    	*//	CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIRVCT  = CN9.CN9_REVISA
+    	*//	)
 	
     	INNER JOIN %TABLE:CNA% CNA
     	ON  CN9.D_E_L_E_T_  = CNA.D_E_L_E_T_
