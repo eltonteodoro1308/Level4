@@ -147,7 +147,8 @@ static function prcCt( nTipoProc )
 
 			for nX := 1 to len( aListCtr )
 
-				MsgRun ( 'Processamento medições Contrato: ' + aListCtr[nX]["CONTRATO"], 'Aguarde ...', {|| incMedicao( aListCtr[ nX ] ) } )
+				MsgRun ( 'Processamento medições Contrato: ' + aListCtr[nX]["CONTRATO"], 'Aguarde ...',;
+					{|| incMedicao( aListCtr[ nX ], cValTochar( nTipoProc ) ) } )
 
 			next nX
 
@@ -174,7 +175,7 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
 		SELECT
 
     	CN9.CN9_NUMERO, CN9.CN9_REVISA, CN9.CN9_XCDPMD,
-    	CNA.CNA_NUMERO, CNA.CNA_XPLHRE, 
+    	CNA.CNA_NUMERO, CNA.CNA_XPLHRE,
     	CNB.CNB_ITEM, CNB.CNB_PRODUT, CNB.CNB_QUANT, CNB.CNB_VLUNIT, CNB.CNB_XHREXT, 
 	
     	CASE CN9_ESPCTR
@@ -198,8 +199,8 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
     	ON  SZA.D_E_L_E_T_ = CN9.D_E_L_E_T_
     	AND SZA.ZA_FILIAL  = CN9.CN9_FILIAL
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECCTR  = CN9.CN9_NUMERO OR
-    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLICTR  = CN9.CN9_NUMERO
+    		(CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECCTR  = CN9.CN9_NUMERO) OR
+			(CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLICTR  = CN9.CN9_NUMERO)
     		)
     	*//AND ( 
     	*//	CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECRVCT  = CN9.CN9_REVISA OR
@@ -212,8 +213,8 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
     	AND CN9.CN9_NUMERO  = CNA.CNA_CONTRA
     	AND CN9.CN9_REVISA  = CNA.CNA_REVISA
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECPLAN  = CNA.CNA_NUMERO OR
-    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIPLAN  = CNA.CNA_NUMERO
+    		(CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECPLAN  = CNA.CNA_NUMERO) OR
+    		(CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIPLAN  = CNA.CNA_NUMERO)
     		)
 	
     	INNER JOIN %TABLE:CNB% CNB
@@ -223,8 +224,8 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
     	AND CNA.CNA_REVISA  = CNB.CNB_REVISA
     	AND CNA.CNA_NUMERO  = CNB.CNB_NUMERO
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECITEM  = CNB.CNB_ITEM OR
-    		CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIITEM  = CNB.CNB_ITEM
+    		(CN9.CN9_ESPCTR  = '1' AND SZA.ZA_RECITEM  = CNB.CNB_ITEM) OR
+    		(CN9.CN9_ESPCTR  = '2' AND SZA.ZA_CLIITEM  = CNB.CNB_ITEM)
     		)
 		
     	WHERE SZC.%NOTDEL%
@@ -232,20 +233,20 @@ static function prcQuery( cAlias, cCompetenc, cEspCtr )
     	AND SZC.ZC_COMPETE = %EXP:cCompetenc%
     	AND SZC.ZC_STATUS = '2'
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')% OR
-    		CN9.CN9_ESPCTR  = '2' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTVD')%
+    		(CN9.CN9_ESPCTR  = '1' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTCP')%) OR
+    		(CN9.CN9_ESPCTR  = '2' AND CN9.CN9_TPCTO = %EXP:GETMV('MX_TPCTVD')%)
     		)
     	AND CN9.CN9_SITUAC = '05'
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')% OR
-    		CN9.CN9_ESPCTR  = '2' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLVD')%
+    		(CN9.CN9_ESPCTR  = '1' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLCP')%) OR
+    		(CN9.CN9_ESPCTR  = '2' AND CNA.CNA_TIPPLA = %EXP:GETMV('MX_TPPLVD')%)
     		)
     	AND CN9.CN9_ESPCTR = %EXP:cEspCtr%
     	AND CNA.CNA_XPLHRE <> %EXP:Space( TamSx3( 'CNA_XPLHRE' )[1] )%
     	AND CNA.CNA_XPLHRE <> CNA.CNA_NUMERO
     	AND ( 
-    		CN9.CN9_ESPCTR  = '1' AND CNB.CNB_TE <> %EXP:Space( TamSx3( 'CNB_TE' )[1] )% OR
-    		CN9.CN9_ESPCTR  = '2' AND CNB.CNB_TS <> %EXP:Space( TamSx3( 'CNB_TS' )[1] )%
+    		(CN9.CN9_ESPCTR  = '1' AND CNB.CNB_TE <> %EXP:Space( TamSx3( 'CNB_TE' )[1] )%) OR
+    		(CN9.CN9_ESPCTR  = '2' AND CNB.CNB_TS <> %EXP:Space( TamSx3( 'CNB_TS' )[1] )%)
     		)
     	AND SUBSTRING( CNA.CNA_PROMED, 5, 2 ) + LEFT( CNA.CNA_PROMED, 4 ) = %EXP:cCompetenc%
 
@@ -258,7 +259,6 @@ return
 static function mntListCtr( aListCtr, cAlias, cCompent )
 
 	local nPos      := 0
-	local nHrPlanej := ( cAlias )->( CNB_QUANT )
 	local nHrTrabal := ( cAlias )->( ZC_TOTHRS )
 
 	( cAlias )->( nPos := aScan( aListCtr, { | item |  item['CONTRATO'] == CN9_NUMERO } ) )
@@ -272,7 +272,6 @@ static function mntListCtr( aListCtr, cAlias, cCompent )
 		aTail( aListCtr )['COMPETENCIA'] := cCompent
 		aTail( aListCtr )['COND_PAG_MED'] := ( cAlias )->( CN9_XCDPMD )
 
-
 	end if
 
 	( cAlias )->( nPos := aScan( aTail( aListCtr )['PLANILHAS'], { | item |  item['NUMERO'] == CNA_NUMERO } ) )
@@ -281,68 +280,35 @@ static function mntListCtr( aListCtr, cAlias, cCompent )
 
 		aAdd( aTail( aListCtr )['PLANILHAS'], jsonObject():new() )
 
-		aTail( aTail( aListCtr )['PLANILHAS'] )['NUMERO'] := ( cAlias )->( CNA_NUMERO )
-		aTail( aTail( aListCtr )['PLANILHAS'] )['PLAN_EXCED'] := ( cAlias )->( CNA_XPLHRE )
-		aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] := {}
+		aTail( aTail( aListCtr )['PLANILHAS'] )['NUMERO']          := ( cAlias )->( CNA_NUMERO )
+		aTail( aTail( aListCtr )['PLANILHAS'] )['PLAN_EXCED']      := ( cAlias )->( CNA_XPLHRE )
+		aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS']           := {}
 
 	end if
 
 	aAdd(aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'], JsonObject():New() )
 
-	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['ITEM']  := ( cAlias )->( CNB_ITEM )
-	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['PRODUTO']  := ( cAlias )->( CNB_PRODUT )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['ITEM']           := ( cAlias )->( CNB_ITEM )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['PRODUTO']        := ( cAlias )->( CNB_PRODUT )
 	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['VALOR_UNITARIO'] := ( cAlias )->( CNB_VLUNIT )
-	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['VALOR_HREXTRA'] := ( cAlias )->( if( CNB_XHREXT > 0, CNB_XHREXT, CNB_VLUNIT ) )
-	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['TES'] := ( cAlias )->( CNE_TES )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['VALOR_HREXTRA']  := ( cAlias )->( if( CNB_XHREXT > 0, CNB_XHREXT, CNB_VLUNIT ) )
+	aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )['TES']            := ( cAlias )->( CNE_TES )
 
-	if nHrPlanej >= nLimHrsMes
+	if nHrTrabal <= nLimHrsMes
 
-		if nHrPlanej >= nHrTrabal
+		aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nHrTrabal
+		aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
 
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrTrabal
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
+	elseif nHrTrabal > nLimHrsMes
 
-		else
-
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := nHrTrabal - nHrPlanej
-
-		end if
-
-	elseif nHrPlanej < nLimHrsMes
-
-		if nHrPlanej >= nHrTrabal
-
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrTrabal
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := 0
-			aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
-
-		else
-
-			if nHrTrabal <= nLimHrsMes
-
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nHrTrabal - nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := 0
-
-			else
-
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_PLANEJADA"]        := nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nLimHrsMes - nHrPlanej
-				aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := nHrTrabal - nLimHrsMes
-
-
-			end if
-
-		end if
+		aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_NORMAL"] := nLimHrsMes
+		aTail( aTail( aTail( aListCtr )['PLANILHAS'] )['ITENS'] )["HR_MED_EXCED_VLR_EXTRA"]  := nHrTrabal - nLimHrsMes
 
 	end if
 
 return
 
-static function incMedicao( jContrato )
+static function incMedicao( jContrato, cEspCtr )
 
 	Local oModel     := Nil
 	Local aCompets   := {}
@@ -351,10 +317,9 @@ static function incMedicao( jContrato )
 	Local aMsgDeErro := {}
 	Local cMsgDeErro := ''
 	Local aArea      := GetArea()
-	Local nPos       := 0
 	Local nX         := 0
 	Local nY         := 0
-	// Local nSldTotal  := 0
+	Local nItem      := 0
 
 	DbSelectArea('CN9')
 	CN9->(DbSetOrder(1))
@@ -380,97 +345,13 @@ static function incMedicao( jContrato )
 
 			If oModel:CanActivate()
 
+				oModel:GetModel('CNRDETAIL2'):SetLPre( {||.T.} )
+				oModel:GetModel('CNRDETAIL2'):SetLPost( {||.T.} )
+
 				oModel:Activate()
-				oModel:SetValue("CNDMASTER","CND_CONTRA"    ,CN9->CN9_NUMERO)
+				oModel:SetValue("CNDMASTER","CND_CONTRA"    , CN9->CN9_NUMERO )
 				oModel:SetValue("CNDMASTER","CND_RCCOMP"    , cValToChar( nCompet ) )//Selecionar competência
 				oModel:SetValue("CNDMASTER","CND_CONDPG"    ,  jContrato['COND_PAG_MED'] )
-
-				/*
-				Tratando planilhas planejAdas
-				*/
-				for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'NUMERO' ] } } )
-
-						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
-
-							oModel:GetModel('CNEDETAIL'):GoLine( nY )
-
-							nPos := aScan( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'],;
-								{ | item | item["ITEM"] == oModel:getModel('CNEDETAIL'):GetValue( 'CNE_ITEM' ) } )
-
-							if nPos > 0
-
-								oModel:getModel('CNEDETAIL'):SetValue( 'CNE_QUANT',;
-									jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nPos ]['HR_MED_PLANEJADA']  )
-
-							end if
-
-						next nY
-
-					end if
-
-				next nX
-
-				/* Planilha Excedente */				
-				for nX := 1 to Len( jContrato['PLANILHAS'] )
-
-					for nY := 1 to len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
-
-						/* Planilha excedente com valor normal */
-						if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][nY]["HR_MED_EXCED_VLR_NORMAL"] > 0 .And.;
-								oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-							if nY != 1
-
-								oModel:GetModel('CNEDETAIL'):GoLine(;
-									oModel:getModel('CNEDETAIL'):AddLine() )
-
-							end if
-
-							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( nY ), CNE->( Len( CNE_ITEM ) ), '0' ) )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_NORMAL' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_UNITARIO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-
-						end if
-
-						/* Planilha excedente com valor extra */
-						if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][nY]["HR_MED_EXCED_VLR_EXTRA"] > 0 .And.;
-								oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
-
-							if nY != 1
-
-								oModel:GetModel('CNEDETAIL'):GoLine(;
-									oModel:getModel('CNEDETAIL'):AddLine() )
-
-							end if
-
-							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( nY ), CNE->( Len( CNE_ITEM ) ), '0' ) )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_EXTRA' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_HREXTRA' ] )
-							oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
-
-						end if
-
-					next nY
-
-				next nX
-
-				If (oModel:VldData()) /*Valida o modelo como um todo*/
-
-					oModel:CommitData()
-
-				EndIf
 
 			EndIf
 
@@ -486,19 +367,97 @@ static function incMedicao( jContrato )
 
 				cNumMed := CND->CND_NUMMED
 
-				oModel:DeActivate()
+				//Tratando planilhas planejAdas
+				for nX := 1 to Len( jContrato['PLANILHAS'] )
 
-				ProcLogAtu('MENSAGEM', 'Gerada a Medição ' + cNumMed,,,.T.)
+					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'NUMERO' ] } } )
 
-				if CN121Encerr(.T.) //Realiza o encerramento da medição
+						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
 
-					ProcLogAtu('MENSAGEM', 'Medição ' + cNumMed + ' encerrada.',,,.T.)
+						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
 
-				else
+							if oModel:getModel('CNEDETAIL'):seekLine( { { 'CNE_ITEM', jContrato[ 'PLANILHAS' ][ nX ][ 'ITENS' ][nY]['ITEM'] } } )
 
-					ProcLogAtu('ERRO', 'Medição ' + cNumMed + ' não pode ser encerrada.',,,.T.)
+								oModel:SetValue("CNRDETAIL2","CNR_TIPO"     , cEspCtr ) //1=Multa/2=Bonificação
+								oModel:SetValue("CNRDETAIL2","CNR_DESCRI"   , 'Estorno Provisão de horas planejadas')
+								oModel:SetValue("CNRDETAIL2","CNR_VALOR"    , oModel:getModel('CNEDETAIL'):GetValue( 'CNE_VLTOT' ) )
 
-				end if
+							end if
+
+						next nY
+
+					end if
+
+					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
+
+						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
+
+						for nY := 1 to  len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
+
+							if nY != 1
+
+								oModel:GetModel('CNEDETAIL'):GoLine(;
+									oModel:getModel('CNEDETAIL'):AddLine() )
+
+							else
+
+								oModel:GetModel('CNEDETAIL'):GoLine( nY )
+
+							end if
+
+							oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( ++nItem ), CNE->( Len( CNE_ITEM ) ), '0' ) )
+							oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
+							oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_NORMAL' ] )
+							oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_UNITARIO' ] )
+							oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
+
+							if jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][nY]["HR_MED_EXCED_VLR_EXTRA"] > 0
+
+								oModel:GetModel('CNEDETAIL'):GoLine(;
+									oModel:getModel('CNEDETAIL'):AddLine() )
+
+								oModel:getModel('CNEDETAIL'):LoadValue('CNE_ITEM'  , PadL( cValToChar( ++nItem ), CNE->( Len( CNE_ITEM ) ), '0' ) )
+								oModel:getModel('CNEDETAIL'):setValue( 'CNE_PRODUT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'PRODUTO' ] )
+								oModel:getModel('CNEDETAIL'):setValue( 'CNE_QUANT ', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'HR_MED_EXCED_VLR_EXTRA' ] )
+								oModel:getModel('CNEDETAIL'):setValue( 'CNE_VLUNIT', jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'VALOR_HREXTRA' ] )
+								oModel:getModel('CNEDETAIL'):setValue( 'CNE_TES'   , jContrato[ 'PLANILHAS' ][ nX ]['ITENS'][ nY ][ 'TES' ] )
+
+							end if
+
+						next nY
+
+					end if
+
+				next nX
+
+				If (oModel:VldData()) /*Valida o modelo como um todo*/
+
+					oModel:CommitData()
+
+				EndIf
+
+				If( oModel:HasErrorMessage() )
+
+					aMsgDeErro := oModel:GetErrorMessage()
+
+					ascan( aMsgDeErro, { | cItem | cMsgDeErro += allTrim( cItem ) } )
+
+					ProcLogAtu('ERRO', 'Erro no Processamento do contrato ' + jContrato['CONTRATO'], cMsgDeErro,,.T.)
+				Else
+
+					ProcLogAtu('MENSAGEM', 'Gerada a Medição ' + cNumMed,,,.T.)
+
+					if CN121Encerr(.T.) //Realiza o encerramento da medição
+
+						ProcLogAtu('MENSAGEM', 'Medição ' + cNumMed + ' encerrada.',,,.T.)
+
+					else
+
+						ProcLogAtu('ERRO', 'Medição ' + cNumMed + ' não pode ser encerrada.',,,.T.)
+
+					end if
+
+				Endif
 
 			EndIf
 
