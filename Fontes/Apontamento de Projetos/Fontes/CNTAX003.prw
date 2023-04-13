@@ -370,9 +370,8 @@ static function incMedicao( jContrato, cEspCtr )
 				//Tratando planilhas planejAdas
 				for nX := 1 to Len( jContrato['PLANILHAS'] )
 
-					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'NUMERO' ] } } )
-
-						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
+					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'NUMERO' ] } } ) .And.;
+							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
 
 						for nY := 1 to oModel:getModel('CNEDETAIL'):Length()
 
@@ -388,9 +387,8 @@ static function incMedicao( jContrato, cEspCtr )
 
 					end if
 
-					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } )
-
-						oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
+					if oModel:getModel('CXNDETAIL'):seekLine( { { 'CXN_NUMPLA', jContrato[ 'PLANILHAS' ][ nX ][ 'PLAN_EXCED' ] } } ).And.;
+							oModel:SetValue("CXNDETAIL","CXN_CHECK", .T.)
 
 						for nY := 1 to  len( jContrato[ 'PLANILHAS' ][ nX ]['ITENS'] )
 
